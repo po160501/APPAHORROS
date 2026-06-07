@@ -62,12 +62,12 @@ class BudgetController extends Controller
     {
         $request->validate([
             'month' => 'required|date_format:Y-m',
+            'name' => 'required|string|max:100',
             'amount' => 'required|numeric|min:0.01',
         ]);
 
         $user = $request->user();
 
-        // Check if budget for this month already exists
         $exists = Budget::where('user_id', $user->id)
             ->where('month', $request->month)
             ->exists();
@@ -79,6 +79,7 @@ class BudgetController extends Controller
         Budget::create([
             'user_id' => $user->id,
             'month' => $request->month,
+            'name' => $request->name,
             'initial_amount' => $request->amount,
             'available_amount' => $request->amount,
         ]);

@@ -15,6 +15,7 @@ class Budget extends Model
     protected $fillable = [
         'user_id',
         'month',
+        'name',
         'initial_amount',
         'available_amount',
     ];

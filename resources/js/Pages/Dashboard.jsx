@@ -6,6 +6,7 @@ export default function Dashboard({ budget, selectedMonth, budgetMonths }) {
     const [selectedSubAccountId, setSelectedSubAccountId] = useState(null);
     const [isSubAccountModalOpen, setIsSubAccountModalOpen] = useState(false);
     const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+    const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
 
     // Get active sub-account details
     const activeSubAccount = budget?.sub_accounts?.find(s => s.id === selectedSubAccountId);
@@ -55,6 +56,7 @@ export default function Dashboard({ budget, selectedMonth, budgetMonths }) {
     // Budget Initialization Form
     const budgetForm = useForm({
         month: selectedMonth,
+        name: '',
         amount: '',
     });
 
@@ -103,7 +105,8 @@ export default function Dashboard({ budget, selectedMonth, budgetMonths }) {
         e.preventDefault();
         budgetForm.post(route('budgets.store'), {
             onSuccess: () => {
-                budgetForm.reset();
+                setIsBudgetModalOpen(false);
+                budgetForm.reset('name', 'amount');
             }
         });
     };
@@ -221,123 +224,89 @@ export default function Dashboard({ budget, selectedMonth, budgetMonths }) {
 
             <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto">
                 
-                {/* 1. NO BUDGET SETUP SCREEN */}
+                {/* Crear Cuenta button - siempre visible */}
                 {!budget && (
-                    <div className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/50 rounded-3xl p-8 text-center max-w-md mx-auto shadow-xl backdrop-blur-md">
-                        <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
-                            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </div>
-                        <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2">
-                            Iniciar {formatMonthSpanish(selectedMonth)}
-                        </h3>
-                        <p className="text-slate-500 dark:text-slate-400 text-sm mb-6 leading-relaxed">
-                            Aún no has registrado un presupuesto disponible para este mes. Ingresa tu dinero disponible inicial para comenzar a dividirlo en subcuentas y registrar tus gastos.
-                        </p>
-
-                        <form onSubmit={handleBudgetSubmit} className="space-y-4">
-                            <div>
-                                <label className="block text-left text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
-                                    Monto Disponible Inicial
-                                </label>
-                                <div className="relative">
-                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 font-bold">$</span>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        placeholder="Ej. 700"
-                                        value={budgetForm.data.amount}
-                                        onChange={e => budgetForm.setData('amount', e.target.value)}
-                                        className="w-full pl-8 pr-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl text-lg font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:bg-white transition-all shadow-sm"
-                                        required
-                                    />
-                                </div>
-                                {budgetForm.errors.amount && (
-                                    <p className="text-red-500 text-xs text-left mt-1">{budgetForm.errors.amount}</p>
-                                )}
-                                {budgetForm.errors.month && (
-                                    <p className="text-red-500 text-xs text-left mt-1">{budgetForm.errors.month}</p>
-                                )}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+                        <div
+                            onClick={() => setIsBudgetModalOpen(true)}
+                            className="cursor-pointer border border-dashed border-emerald-200 dark:border-emerald-800/50 rounded-3xl p-5 flex flex-col justify-center items-center text-center bg-emerald-50/30 dark:bg-emerald-900/10 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:border-emerald-300 dark:hover:border-emerald-700 transition-all min-h-[142px]"
+                        >
+                            <div className="p-2.5 bg-emerald-100 dark:bg-emerald-900/40 rounded-full text-emerald-500 dark:text-emerald-400 mb-2">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                                </svg>
                             </div>
-
-                            <button
-                                type="submit"
-                                disabled={budgetForm.processing}
-                                className="w-full bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-bold py-3 px-4 rounded-2xl shadow-lg shadow-emerald-500/20 active:shadow-none transition-all disabled:opacity-50"
-                            >
-                                {budgetForm.processing ? 'Guardando...' : 'Establecer Disponible'}
-                            </button>
-                        </form>
+                            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">Crear Cuenta</span>
+                            <span className="text-[10px] text-slate-400">Nueva cuenta principal</span>
+                        </div>
                     </div>
                 )}
 
-                {/* 2. BUDGET EXISTS */}
-                {budget && (
-                    <div className="space-y-8">
-                        
-                        {/* Summary Banner Cards */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            
-                            {/* Available Balance Card */}
-                            <div className="relative overflow-hidden bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl p-6 text-white shadow-xl shadow-emerald-500/10">
-                                <div className="absolute right-0 bottom-0 opacity-10 translate-x-4 translate-y-4">
-                                    <svg className="w-48 h-48" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                                    </svg>
-                                </div>
-                                <h4 className="text-emerald-100 font-semibold text-xs uppercase tracking-wider mb-1">
-                                    Monto Disponible
-                                </h4>
-                                <div className="text-3xl font-extrabold mb-4">
-                                    {formatMoney(budget.available_amount)}
-                                </div>
-                                <div className="flex items-center justify-between text-xs text-emerald-50/80">
-                                    <span>Inicial: {formatMoney(budget.initial_amount)}</span>
-                                    <span>Mes: {formatMonthSpanish(selectedMonth)}</span>
-                                </div>
+                {/* Summary Banner Cards - siempre visible */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+
+                    {/* Available Balance Card */}
+                    {budget && (
+                        <div className="relative overflow-hidden bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl p-6 text-white shadow-xl shadow-emerald-500/10">
+                            <div className="absolute right-0 bottom-0 opacity-10 translate-x-4 translate-y-4">
+                                <svg className="w-48 h-48" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                                </svg>
                             </div>
-
-                            {/* Allocated Budget Card */}
-                            {/* <div className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/50 rounded-3xl p-6 shadow-md">
-                                {/* <h4 className="text-slate-400 dark:text-slate-500 font-semibold text-xs uppercase tracking-wider mb-1">
-                                    Monto Asignado a Subcuentas
-                                </h4> 
-                                <div className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">
-                                    {formatMoney(allocatedSum)}
-                                </div>
-                                <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-2 mb-3">
-                                    <div 
-                                        className="bg-blue-500 h-2 rounded-full transition-all duration-500" 
-                                        style={{ width: `${Math.min(100, (allocatedSum / budget.initial_amount) * 100)}%` }}
-                                    ></div>
-                                </div>
-                                <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
-                                    <span>Por asignar: {formatMoney(remainingToAllocate)}</span>
-                                    <span>{( (allocatedSum / budget.initial_amount) * 100 ).toFixed(0)}% asignado</span>
-                                </div>
-                            </div> */}
-
-                            {/* Total Expenses Card */}
-                            <div className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/50 rounded-3xl p-6 shadow-md">
-                                <h4 className="text-slate-400 dark:text-slate-500 font-semibold text-xs uppercase tracking-wider mb-1">
-                                    Gastos Totales del Mes
-                                </h4>
-                                <div className="text-2xl font-bold text-rose-600 dark:text-rose-400 mb-2">
-                                    {formatMoney(totalExpensesSum)}
-                                </div>
-                                <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-2 mb-3">
-                                    <div 
-                                        className="bg-rose-500 h-2 rounded-full transition-all duration-500" 
-                                        style={{ width: `${Math.min(100, (totalExpensesSum / budget.initial_amount) * 100)}%` }}
-                                    ></div>
-                                </div>
-                                <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
-                                    <span>{allExpenses.length} transacciones</span>
-                                    <span>{( (totalExpensesSum / budget.initial_amount) * 100 ).toFixed(0)}% del disponible</span>
-                                </div>
+                            <h4 className="text-emerald-100 font-semibold text-xs uppercase tracking-wider mb-1">
+                                Monto Disponible
+                            </h4>
+                            <div className="text-3xl font-extrabold mb-4">
+                                {formatMoney(budget.available_amount)}
+                            </div>
+                            <div className="flex items-center justify-between text-xs text-emerald-50/80">
+                                <span>Inicial: {formatMoney(budget.initial_amount)}</span>
+                                <span>Mes: {formatMonthSpanish(selectedMonth)}</span>
                             </div>
                         </div>
+                    )}
+
+                    {/* Total Expenses Card */}
+                    {budget && (
+                        <div className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/50 rounded-3xl p-6 shadow-md">
+                            <h4 className="text-slate-400 dark:text-slate-500 font-semibold text-xs uppercase tracking-wider mb-1">
+                                Gastos Totales del Mes
+                            </h4>
+                            <div className="text-2xl font-bold text-rose-600 dark:text-rose-400 mb-2">
+                                {formatMoney(totalExpensesSum)}
+                            </div>
+                            <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-2 mb-3">
+                                <div
+                                    className="bg-rose-500 h-2 rounded-full transition-all duration-500"
+                                    style={{ width: `${Math.min(100, (totalExpensesSum / budget.initial_amount) * 100)}%` }}
+                                ></div>
+                            </div>
+                            <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
+                                <span>{allExpenses.length} transacciones</span>
+                                <span>{((totalExpensesSum / budget.initial_amount) * 100).toFixed(0)}% del disponible</span>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Crear Cuenta card - siempre visible */}
+                    <div
+                        onClick={() => setIsBudgetModalOpen(true)}
+                        className="cursor-pointer border border-dashed border-emerald-200 dark:border-emerald-800/50 rounded-3xl p-6 flex flex-col justify-center items-center text-center bg-emerald-50/30 dark:bg-emerald-900/10 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:border-emerald-300 dark:hover:border-emerald-700 transition-all"
+                    >
+                        <div className="p-2.5 bg-emerald-100 dark:bg-emerald-900/40 rounded-full text-emerald-500 dark:text-emerald-400 mb-2">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                            </svg>
+                        </div>
+                        <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">Crear Cuenta</span>
+                        <span className="text-[10px] text-slate-400">Nueva cuenta principal</span>
+                    </div>
+
+                </div>
+
+                {/* BUDGET EXISTS */}
+                {budget && (
+                    <div className="space-y-8">
 
                         {/* SUB-ACCOUNTS SECTION */}
                         <div className="space-y-4">
@@ -428,6 +397,7 @@ export default function Dashboard({ budget, selectedMonth, budgetMonths }) {
                                             <span className="text-[10px] text-slate-400">Disponible: {formatMoney(remainingToAllocate)}</span>
                                         </div>
                                     )}
+
                                 </div>
                             )}
                         </div>
@@ -600,6 +570,89 @@ export default function Dashboard({ budget, selectedMonth, budgetMonths }) {
             {/* ====================================================================== */}
             {/* MODALS */}
             {/* ====================================================================== */}
+
+            {/* Modal Crear Cuenta Principal */}
+            {isBudgetModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+                    <div className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-3xl p-6 w-full max-w-md shadow-2xl relative">
+                        <button
+                            onClick={() => setIsBudgetModalOpen(false)}
+                            className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                        >
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+
+                        <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-2">
+                            Nueva Cuenta
+                        </h3>
+                        <p className="text-slate-400 dark:text-slate-500 text-xs mb-6">
+                            Crea una nueva cuenta principal para este mes con un nombre y monto disponible.
+                        </p>
+
+                        <form onSubmit={handleBudgetSubmit} className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
+                                    Nombre del Ahorro
+                                </label>
+                                <input
+                                    type="text"
+                                    value={budgetForm.data.name}
+                                    onChange={e => budgetForm.setData('name', e.target.value)}
+                                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                    required
+                                    maxLength="100"
+                                />
+                                {budgetForm.errors.name && (
+                                    <p className="text-red-500 text-xs mt-1">{budgetForm.errors.name}</p>
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
+                                    Monto Disponible
+                                </label>
+                                <div className="relative">
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        placeholder="Ej. 700"
+                                        value={budgetForm.data.amount}
+                                        onChange={e => budgetForm.setData('amount', e.target.value)}
+                                        className="w-full pl-7 pr-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                        required
+                                    />
+                                </div>
+                                {budgetForm.errors.amount && (
+                                    <p className="text-red-500 text-xs mt-1">{budgetForm.errors.amount}</p>
+                                )}
+                                {budgetForm.errors.month && (
+                                    <p className="text-red-500 text-xs mt-1">{budgetForm.errors.month}</p>
+                                )}
+                            </div>
+
+                            <div className="flex gap-3 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsBudgetModalOpen(false)}
+                                    className="w-1/2 py-2.5 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-xl text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={budgetForm.processing}
+                                    className="w-1/2 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl text-sm transition-colors disabled:opacity-50"
+                                >
+                                    {budgetForm.processing ? 'Creando...' : 'Crear Cuenta'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
 
             {/* 1. Modal Add Sub-Account */}
             {isSubAccountModalOpen && (
