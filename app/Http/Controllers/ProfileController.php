@@ -8,6 +8,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -21,7 +22,27 @@ class ProfileController extends Controller
         return Inertia::render('Profile/Edit', [
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
             'status' => session('status'),
+            'coverImage' => $request->user()->cover_image
+                ? asset('storage/' . $request->user()->cover_image)
+                : null,
         ]);
+    }
+
+    public function updateCover(Request $request): RedirectResponse
+    {
+        $request->validate(['cover' => 'required|image|max:4096']);
+
+        $user = $request->user();
+
+        if ($user->cover_image) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($user->cover_image);
+        }
+
+        $path = $request->file('cover')->store('covers', 'public');
+        $user->cover_image = $path;
+        $user->save();
+
+        return Redirect::route('profile.edit')->with('status', 'cover-updated');
     }
 
     /**

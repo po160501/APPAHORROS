@@ -14,50 +14,41 @@ use Carbon\Carbon;
 
 class BudgetController extends Controller
 {
-    /**
-     * Display the budget and its details.
-     */
     public function index(Request $request): Response
     {
         $user = $request->user();
-        
-        // Month format: 'YYYY-MM', defaults to current month
+
         $month = $request->input('month', Carbon::now()->format('Y-m'));
 
-        $budget = Budget::where('user_id', $user->id)
+        $budgets = Budget::where('user_id', $user->id)
             ->where('month', $month)
             ->with(['subAccounts' => function ($query) {
                 $query->with(['expenses' => function ($q) {
                     $q->orderBy('date', 'desc');
                 }]);
             }])
-            ->first();
+            ->get();
 
-        // Get list of months that have budgets for the history dropdown/navigator
         $budgetMonths = Budget::where('user_id', $user->id)
             ->orderBy('month', 'desc')
             ->pluck('month')
+            ->unique()
+            ->values()
             ->toArray();
 
-        // Add current month if not in list
         $currentMonth = Carbon::now()->format('Y-m');
         if (!in_array($currentMonth, $budgetMonths)) {
             $budgetMonths[] = $currentMonth;
-            usort($budgetMonths, function ($a, $b) {
-                return strcmp($b, $a); // Sort descending
-            });
+            usort($budgetMonths, fn($a, $b) => strcmp($b, $a));
         }
 
         return Inertia::render('Dashboard', [
-            'budget' => $budget,
+            'budgets' => $budgets,
             'selectedMonth' => $month,
             'budgetMonths' => $budgetMonths,
         ]);
     }
 
-    /**
-     * Store a new budget.
-     */
     public function storeBudget(Request $request): RedirectResponse
     {
         $request->validate([
@@ -66,30 +57,17 @@ class BudgetController extends Controller
             'amount' => 'required|numeric|min:0.01',
         ]);
 
-        $user = $request->user();
-
-        $exists = Budget::where('user_id', $user->id)
-            ->where('month', $request->month)
-            ->exists();
-
-        if ($exists) {
-            return back()->withErrors(['month' => 'Ya existe un presupuesto asignado a este mes.']);
-        }
-
         Budget::create([
-            'user_id' => $user->id,
+            'user_id' => $request->user()->id,
             'month' => $request->month,
             'name' => $request->name,
             'initial_amount' => $request->amount,
             'available_amount' => $request->amount,
         ]);
 
-        return back()->with('success', 'Presupuesto inicial establecido con éxito.');
+        return back()->with('success', 'Cuenta creada con éxito.');
     }
 
-    /**
-     * Store a new sub-account.
-     */
     public function storeSubAccount(Request $request): RedirectResponse
     {
         $request->validate([
@@ -100,22 +78,18 @@ class BudgetController extends Controller
 
         $budget = Budget::findOrFail($request->budget_id);
 
-        // Ensure the budget belongs to the user
         if ($budget->user_id !== $request->user()->id) {
             abort(403);
         }
 
-        // Validate that there is enough unallocated money in the budget
         $allocatedSum = $budget->subAccounts()->sum('initial_amount');
         $remainingToAllocate = $budget->initial_amount - $allocatedSum;
 
         if ($request->amount > $remainingToAllocate) {
             return back()->withErrors([
                 'amount' => sprintf(
-                    'No puedes asignar esta cantidad. El monto máximo disponible para asignar es $%s (Presupuesto total $%s - Ya asignado $%s).',
-                    number_format($remainingToAllocate, 2),
-                    number_format($budget->initial_amount, 2),
-                    number_format($allocatedSum, 2)
+                    'No puedes asignar esta cantidad. El monto máximo disponible para asignar es $%s.',
+                    number_format($remainingToAllocate, 2)
                 )
             ]);
         }
@@ -130,9 +104,6 @@ class BudgetController extends Controller
         return back()->with('success', 'Subcuenta creada correctamente.');
     }
 
-    /**
-     * Store a new expense.
-     */
     public function storeExpense(Request $request): RedirectResponse
     {
         $request->validate([
@@ -144,14 +115,11 @@ class BudgetController extends Controller
 
         $subAccount = SubAccount::with('budget')->findOrFail($request->sub_account_id);
 
-        // Ensure ownership
         if ($subAccount->budget->user_id !== $request->user()->id) {
             abort(403);
         }
 
-        // Deduct from sub-account and budget available amount inside a transaction
         DB::transaction(function () use ($subAccount, $request) {
-            // Create expense
             Expense::create([
                 'sub_account_id' => $subAccount->id,
                 'amount' => $request->amount,
@@ -159,11 +127,9 @@ class BudgetController extends Controller
                 'date' => $request->date,
             ]);
 
-            // Deduct from sub-account
             $subAccount->current_amount -= $request->amount;
             $subAccount->save();
 
-            // Deduct from budget
             $budget = $subAccount->budget;
             $budget->available_amount -= $request->amount;
             $budget->save();
@@ -172,30 +138,23 @@ class BudgetController extends Controller
         return back()->with('success', 'Gasto agregado correctamente.');
     }
 
-    /**
-     * Delete an expense (to correct errors).
-     */
     public function destroyExpense(Request $request, int $id): RedirectResponse
     {
         $expense = Expense::with('subAccount.budget')->findOrFail($id);
 
-        // Ensure ownership
         if ($expense->subAccount->budget->user_id !== $request->user()->id) {
             abort(403);
         }
 
         DB::transaction(function () use ($expense) {
-            // Restore funds to sub-account
             $subAccount = $expense->subAccount;
             $subAccount->current_amount += $expense->amount;
             $subAccount->save();
 
-            // Restore funds to budget
             $budget = $subAccount->budget;
             $budget->available_amount += $expense->amount;
             $budget->save();
 
-            // Delete expense
             $expense->delete();
         });
 
