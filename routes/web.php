@@ -15,8 +15,13 @@ Route::get('/', function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [BudgetController::class, 'index'])->name('dashboard');
     Route::post('/budgets', [BudgetController::class, 'storeBudget'])->name('budgets.store');
+    Route::put('/budgets/{budget}', [BudgetController::class, 'updateBudget'])->name('budgets.update');
+    Route::post('/income', [BudgetController::class, 'updateIncome'])->name('income.update');
     Route::post('/sub-accounts', [BudgetController::class, 'storeSubAccount'])->name('sub-accounts.store');
+    Route::put('/sub-accounts/{subAccount}', [BudgetController::class, 'updateSubAccount'])->name('sub-accounts.update');
     Route::post('/expenses', [BudgetController::class, 'storeExpense'])->name('expenses.store');
+    Route::post('/savings', [BudgetController::class, 'storeSaving'])->name('savings.store');
+    Route::put('/expenses/{id}', [BudgetController::class, 'updateExpense'])->name('expenses.update');
     Route::delete('/expenses/{id}', [BudgetController::class, 'destroyExpense'])->name('expenses.destroy');
 });
 

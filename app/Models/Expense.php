@@ -15,11 +15,13 @@ class Expense extends Model
         'amount',
         'comment',
         'date',
+        'is_saving',
     ];
 
     protected $casts = [
         'date' => 'datetime',
         'amount' => 'decimal:2',
+        'is_saving' => 'boolean',
     ];
 
     public function subAccount(): BelongsTo

@@ -2,7 +2,13 @@ import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head, useForm, router, usePage } from "@inertiajs/react";
 import { useState, useEffect, useRef } from "react";
 
-export default function Dashboard({ budgets, selectedMonth, budgetMonths }) {
+export default function Dashboard({
+    budgets,
+    selectedMonth,
+    budgetMonths,
+    prevBudgets = [],
+    income = 0,
+}) {
     const { auth } = usePage().props;
     const coverImageUrl = auth?.user?.cover_image_url || null;
     const [selectedBudgetId, setSelectedBudgetId] = useState(null);
@@ -10,6 +16,18 @@ export default function Dashboard({ budgets, selectedMonth, budgetMonths }) {
     const [isSubAccountModalOpen, setIsSubAccountModalOpen] = useState(false);
     const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
     const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
+    const [editingRecord, setEditingRecord] = useState(null);
+    const [isBudgetEditOpen, setIsBudgetEditOpen] = useState(false);
+    const [isSubAccountEditOpen, setIsSubAccountEditOpen] = useState(false);
+    const [budgetEditData, setBudgetEditData] = useState({
+        name: "",
+        amount: "",
+        target_month: "",
+    });
+    const [subAccountEditData, setSubAccountEditData] = useState({
+        name: "",
+        amount: "",
+    });
 
     const selectedBudget =
         budgets?.find((b) => b.id === selectedBudgetId) || null;
@@ -45,6 +63,39 @@ export default function Dashboard({ budgets, selectedMonth, budgetMonths }) {
         0,
     );
 
+    const expenseBudgets = budgets.filter((budget) => budget.type === "gasto");
+    const savingBudgets = budgets.filter((budget) => budget.type === "ahorro");
+    const monthlyExpenses = expenseBudgets
+        .flatMap((budget) => budget.sub_accounts.flatMap((sub) => sub.expenses))
+        .reduce((sum, expense) => sum + parseFloat(expense.amount), 0);
+    const monthlySavings = savingBudgets.reduce(
+        (sum, budget) => sum + parseFloat(budget.available_amount),
+        0,
+    );
+    const categoryTotals = expenseBudgets
+        .flatMap((budget) => budget.sub_accounts)
+        .map((sub) => ({
+            name: sub.name,
+            amount:
+                parseFloat(sub.initial_amount) - parseFloat(sub.current_amount),
+        }))
+        .filter((category) => category.amount > 0)
+        .sort((a, b) => b.amount - a.amount);
+    const spendingPctOfIncome =
+        income > 0 ? (monthlyExpenses / income) * 100 : 0;
+    const savingPctOfIncome = income > 0 ? (monthlySavings / income) * 100 : 0;
+    const previousCategories = prevBudgets
+        .flatMap((budget) => budget.sub_accounts)
+        .reduce((totals, sub) => {
+            totals[sub.name] =
+                (totals[sub.name] || 0) +
+                sub.expenses.reduce(
+                    (sum, expense) => sum + parseFloat(expense.amount),
+                    0,
+                );
+            return totals;
+        }, {});
+
     const formatMoney = (amount) =>
         new Intl.NumberFormat("es-MX", {
             style: "currency",
@@ -68,12 +119,29 @@ export default function Dashboard({ budgets, selectedMonth, budgetMonths }) {
         return name.replace(/^\w/, (c) => c.toUpperCase());
     };
 
-    const budgetForm = useForm({ month: selectedMonth, name: "", amount: "" });
+    const monthsUntilTarget = (targetMonth) => {
+        if (!targetMonth) return null;
+        const [year, month] = targetMonth.split("-").map(Number);
+        const now = new Date();
+        return Math.max(
+            1,
+            (year - now.getFullYear()) * 12 + month - (now.getMonth() + 1) + 1,
+        );
+    };
+
+    const budgetForm = useForm({
+        month: selectedMonth,
+        name: "",
+        amount: "",
+        type: "ahorro",
+        target_month: "",
+    });
 
     const subAccountForm = useForm({
         budget_id: selectedBudget?.id || "",
         name: "",
         amount: "",
+        type: "gasto",
     });
 
     const expenseForm = useForm({
@@ -82,6 +150,19 @@ export default function Dashboard({ budgets, selectedMonth, budgetMonths }) {
         comment: "",
         date: "",
     });
+
+    const savingForm = useForm({
+        budget_id: selectedBudget?.id || "",
+        amount: "",
+        comment: "",
+        date: new Date().toISOString().slice(0, 16),
+    });
+    const incomeForm = useForm({ month: selectedMonth, income: income || "" });
+    const editForm = useForm({ amount: "", comment: "", date: "" });
+
+    useEffect(() => {
+        if (selectedBudget) savingForm.setData("budget_id", selectedBudget.id);
+    }, [selectedBudgetId]);
 
     useEffect(() => {
         if (selectedBudget)
@@ -118,7 +199,7 @@ export default function Dashboard({ budgets, selectedMonth, budgetMonths }) {
         budgetForm.post(route("budgets.store"), {
             onSuccess: () => {
                 setIsBudgetModalOpen(false);
-                budgetForm.reset("name", "amount");
+                budgetForm.reset("name", "amount", "target_month");
             },
         });
     };
@@ -131,6 +212,69 @@ export default function Dashboard({ budgets, selectedMonth, budgetMonths }) {
                 subAccountForm.reset("name", "amount");
             },
         });
+    };
+
+    const handleSavingSubmit = (e) => {
+        e.preventDefault();
+        savingForm.post(route("savings.store"), {
+            onSuccess: () => savingForm.reset("amount", "comment"),
+        });
+    };
+
+    const handleIncomeSubmit = (e) => {
+        e.preventDefault();
+        incomeForm.post(route("income.update"), { preserveScroll: true });
+    };
+
+    const openEditRecord = (record) => {
+        setEditingRecord(record);
+        editForm.setData({
+            amount: record.amount,
+            comment: record.comment || "",
+            date: new Date(record.date).toISOString().slice(0, 16),
+        });
+    };
+
+    const handleEditSubmit = (e) => {
+        e.preventDefault();
+        editForm.put(route("expenses.update", editingRecord.id), {
+            preserveScroll: true,
+            onSuccess: () => setEditingRecord(null),
+        });
+    };
+
+    const openBudgetEdit = () => {
+        setBudgetEditData({
+            name: selectedBudget.name,
+            amount: selectedBudget.initial_amount,
+            target_month: selectedBudget.target_month || "",
+        });
+        setIsBudgetEditOpen(true);
+    };
+    const handleBudgetEditSubmit = (e) => {
+        e.preventDefault();
+        router.put(route("budgets.update", selectedBudget.id), budgetEditData, {
+            preserveScroll: true,
+            onSuccess: () => setIsBudgetEditOpen(false),
+        });
+    };
+    const openSubAccountEdit = () => {
+        setSubAccountEditData({
+            name: activeSubAccount.name,
+            amount: activeSubAccount.initial_amount,
+        });
+        setIsSubAccountEditOpen(true);
+    };
+    const handleSubAccountEditSubmit = (e) => {
+        e.preventDefault();
+        router.put(
+            route("sub-accounts.update", activeSubAccount.id),
+            subAccountEditData,
+            {
+                preserveScroll: true,
+                onSuccess: () => setIsSubAccountEditOpen(false),
+            },
+        );
     };
 
     const handleExpenseSubmit = (e) => {
@@ -155,13 +299,18 @@ export default function Dashboard({ budgets, selectedMonth, budgetMonths }) {
         }
     };
 
+    useEffect(() => {
+        incomeForm.setData({ month: selectedMonth, income: income || "" });
+    }, [selectedMonth, income]);
+
     const budgetItems = [...budgets, "__create__"];
-    const subItems = selectedBudget
-        ? [
-              ...selectedBudget.sub_accounts,
-              ...(remainingToAllocate > 0.01 ? ["__create_sub__"] : []),
-          ]
-        : [];
+    const subItems =
+        selectedBudget && selectedBudget.type !== "ahorro"
+            ? [
+                  ...selectedBudget.sub_accounts,
+                  ...(remainingToAllocate > 0.01 ? ["__create_sub__"] : []),
+              ]
+            : [];
 
     const CARD_W = 320;
     const GAP = 16;
@@ -410,6 +559,168 @@ export default function Dashboard({ budgets, selectedMonth, budgetMonths }) {
             <Head title="Control de Ahorros" />
 
             <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto space-y-8">
+                <section className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/50 rounded-3xl shadow-sm p-5 sm:p-6 space-y-5">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div>
+                            <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">
+                                Resumen de {formatMonthSpanish(selectedMonth)}
+                            </h3>
+                            <p className="text-xs text-slate-400">
+                                Tu balance, categorías y avance mensual.
+                            </p>
+                        </div>
+                        <form
+                            onSubmit={handleIncomeSubmit}
+                            className="flex gap-2 items-end"
+                        >
+                            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                                Ingreso del mes
+                                <input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={incomeForm.data.income}
+                                    onChange={(e) =>
+                                        incomeForm.setData(
+                                            "income",
+                                            e.target.value,
+                                        )
+                                    }
+                                    className="mt-1 block w-36 px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100"
+                                    placeholder="$ 0.00"
+                                />
+                            </label>
+                            <button
+                                type="submit"
+                                disabled={incomeForm.processing}
+                                className="px-3 py-2 bg-slate-800 dark:bg-slate-700 text-white rounded-xl text-xs font-bold"
+                            >
+                                Guardar
+                            </button>
+                        </form>
+                    </div>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                        <div className="rounded-2xl bg-rose-50 dark:bg-rose-950/30 p-4">
+                            <p className="text-[10px] uppercase font-bold text-rose-500">
+                                Gastado
+                            </p>
+                            <p className="text-xl font-extrabold text-rose-700 dark:text-rose-300">
+                                {formatMoney(monthlyExpenses)}
+                            </p>
+                            <p className="text-[10px] text-rose-500">
+                                {income > 0
+                                    ? `${spendingPctOfIncome.toFixed(1)}% del ingreso`
+                                    : "Añade tu ingreso"}
+                            </p>
+                        </div>
+                        <div className="rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 p-4">
+                            <p className="text-[10px] uppercase font-bold text-emerald-500">
+                                Ahorrado
+                            </p>
+                            <p className="text-xl font-extrabold text-emerald-700 dark:text-emerald-300">
+                                {formatMoney(monthlySavings)}
+                            </p>
+                            <p className="text-[10px] text-emerald-500">
+                                {income > 0
+                                    ? `${savingPctOfIncome.toFixed(1)}% del ingreso`
+                                    : "Depósitos del mes"}
+                            </p>
+                        </div>
+                        <div className="rounded-2xl bg-slate-50 dark:bg-slate-900/50 p-4">
+                            <p className="text-[10px] uppercase font-bold text-slate-400">
+                                Ingreso
+                            </p>
+                            <p className="text-xl font-extrabold text-slate-700 dark:text-slate-200">
+                                {formatMoney(income)}
+                            </p>
+                            <p className="text-[10px] text-slate-400">
+                                Disponible:{" "}
+                                {formatMoney(
+                                    income - monthlyExpenses - monthlySavings,
+                                )}
+                            </p>
+                        </div>
+                        <div className="rounded-2xl bg-violet-50 dark:bg-violet-950/30 p-4">
+                            <p className="text-[10px] uppercase font-bold text-violet-500">
+                                Mayor categoría
+                            </p>
+                            <p className="text-lg font-extrabold text-violet-700 dark:text-violet-300 truncate">
+                                {categoryTotals[0]?.name || "Sin gastos"}
+                            </p>
+                            <p className="text-[10px] text-violet-500">
+                                {categoryTotals[0]
+                                    ? `${((categoryTotals[0].amount / monthlyExpenses) * 100).toFixed(0)}% de gastos`
+                                    : ""}
+                            </p>
+                        </div>
+                    </div>
+                    {categoryTotals.length > 0 && (
+                        <div className="grid md:grid-cols-[140px_1fr] gap-5 items-center">
+                            <div
+                                className="mx-auto w-28 h-28 rounded-full flex items-center justify-center"
+                                style={{
+                                    background: `conic-gradient(#10b981 0 ${Math.min(100, (categoryTotals[0].amount / monthlyExpenses) * 100)}%, #e2e8f0 0 100%)`,
+                                }}
+                            >
+                                <div className="w-20 h-20 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center text-center text-[10px] font-bold text-slate-500">
+                                    Gastos
+                                </div>
+                            </div>
+                            <div className="space-y-3">
+                                {categoryTotals.slice(0, 5).map((category) => {
+                                    const percent =
+                                        (category.amount / monthlyExpenses) *
+                                        100;
+                                    const previous =
+                                        previousCategories[category.name] || 0;
+                                    const difference =
+                                        category.amount - previous;
+                                    return (
+                                        <div key={category.name}>
+                                            <div className="flex justify-between text-xs mb-1">
+                                                <span className="font-semibold text-slate-700 dark:text-slate-200">
+                                                    {category.name}
+                                                </span>
+                                                <span className="text-slate-500">
+                                                    {formatMoney(
+                                                        category.amount,
+                                                    )}{" "}
+                                                    · {percent.toFixed(0)}%{" "}
+                                                    {previous > 0 && (
+                                                        <em
+                                                            className={
+                                                                difference > 0
+                                                                    ? "text-rose-500 not-italic"
+                                                                    : "text-emerald-500 not-italic"
+                                                            }
+                                                        >
+                                                            (
+                                                            {difference > 0
+                                                                ? "+"
+                                                                : ""}
+                                                            {formatMoney(
+                                                                difference,
+                                                            )}{" "}
+                                                            vs. mes anterior)
+                                                        </em>
+                                                    )}
+                                                </span>
+                                            </div>
+                                            <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-700">
+                                                <div
+                                                    className="h-2 rounded-full bg-emerald-500"
+                                                    style={{
+                                                        width: `${percent}%`,
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+                </section>
                 {/* TARJETA PRINCIPAL */}
                 <div
                     ref={budgetTrackRef}
@@ -530,15 +841,25 @@ export default function Dashboard({ budgets, selectedMonth, budgetMonths }) {
                                     {formatMoney(budget.available_amount)}
                                 </div>
                                 <div
-                                    className={`relative z-10 text-[10px] font-semibold mb-3 ${isSelected ? "text-rose-200" : "text-rose-400"}`}
+                                    className={`relative z-10 text-[10px] font-semibold mb-3 ${
+                                        isSelected
+                                            ? budget.type === "ahorro"
+                                                ? "text-emerald-200"
+                                                : "text-rose-200"
+                                            : budget.type === "ahorro"
+                                              ? "text-emerald-500"
+                                              : "text-rose-400"
+                                    }`}
                                 >
-                                    Gastos: {formatMoney(budgetTotal)}
+                                    {budget.type === "ahorro"
+                                        ? `Meta: ${formatMoney(budget.initial_amount)}${budget.target_month ? ` · ${formatMonthSpanish(budget.target_month)}` : ""}`
+                                        : `Gastos: ${formatMoney(budgetTotal)}`}
                                 </div>
                                 <div
                                     className={`relative z-10 w-full rounded-full h-1.5 mb-2 ${isSelected ? "bg-white/20" : "bg-slate-100 dark:bg-slate-700"}`}
                                 >
                                     <div
-                                        className={`h-1.5 rounded-full transition-all duration-300 ${isSelected ? "bg-white" : "bg-emerald-500"}`}
+                                        className={`h-1.5 rounded-full transition-all duration-300 ${isSelected ? "bg-white" : budget.type === "ahorro" ? "bg-emerald-400" : "bg-emerald-500"}`}
                                         style={{ width: `${pct}%` }}
                                     ></div>
                                 </div>
@@ -546,11 +867,15 @@ export default function Dashboard({ budgets, selectedMonth, budgetMonths }) {
                                     className={`relative z-10 flex justify-between text-[10px] ${isSelected ? "text-white/70" : "text-slate-400 dark:text-slate-500"}`}
                                 >
                                     <span>
-                                        Inicial:{" "}
-                                        {formatMoney(budget.initial_amount)}
+                                        {budget.type === "ahorro"
+                                            ? "Meta"
+                                            : "Inicial"}
+                                        : {formatMoney(budget.initial_amount)}
                                     </span>
                                     <span>
-                                        {budget.sub_accounts.length} subcuentas
+                                        {budget.type === "ahorro"
+                                            ? `${Math.min(100, Math.round(pct))}%`
+                                            : `${budget.sub_accounts.length} subcuentas`}
                                     </span>
                                 </div>
                             </div>
@@ -561,9 +886,149 @@ export default function Dashboard({ budgets, selectedMonth, budgetMonths }) {
                 {/* DETALLE DE CUENTA SELECCIONADA */}
                 {selectedBudget && (
                     <div className="space-y-8">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                                    Cuenta seleccionada
+                                </p>
+                                <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">
+                                    {selectedBudget.name}
+                                </h3>
+                            </div>
+                            <button
+                                onClick={openBudgetEdit}
+                                className="px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-emerald-600"
+                            >
+                                Editar cuenta
+                            </button>
+                        </div>
                         {/* SUBCUENTAS */}
                         <div className="space-y-4">
-                            {selectedBudget.sub_accounts.length === 0 ? (
+                            {selectedBudget.type === "ahorro" ? (
+                                <div className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/50 rounded-3xl shadow-sm p-6 space-y-4">
+                                    <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">
+                                        Registrar Ahorro
+                                    </h3>
+                                    {selectedBudget.target_month &&
+                                        (() => {
+                                            const remaining = Math.max(
+                                                0,
+                                                parseFloat(
+                                                    selectedBudget.initial_amount,
+                                                ) -
+                                                    parseFloat(
+                                                        selectedBudget.available_amount,
+                                                    ),
+                                            );
+                                            const months = monthsUntilTarget(
+                                                selectedBudget.target_month,
+                                            );
+                                            return (
+                                                <div className="grid grid-cols-3 gap-2 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 p-3 text-center">
+                                                    <div>
+                                                        <p className="text-[10px] uppercase font-bold text-emerald-600">
+                                                            Falta
+                                                        </p>
+                                                        <p className="text-sm font-extrabold text-emerald-800 dark:text-emerald-200">
+                                                            {formatMoney(
+                                                                remaining,
+                                                            )}
+                                                        </p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[10px] uppercase font-bold text-emerald-600">
+                                                            Fecha meta
+                                                        </p>
+                                                        <p className="text-xs font-bold text-emerald-800 dark:text-emerald-200">
+                                                            {formatMonthSpanish(
+                                                                selectedBudget.target_month,
+                                                            )}
+                                                        </p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[10px] uppercase font-bold text-emerald-600">
+                                                            Por mes
+                                                        </p>
+                                                        <p className="text-sm font-extrabold text-emerald-800 dark:text-emerald-200">
+                                                            {formatMoney(
+                                                                remaining /
+                                                                    months,
+                                                            )}
+                                                        </p>
+                                                        <p className="text-[9px] text-emerald-600">
+                                                            {months}{" "}
+                                                            {months === 1
+                                                                ? "mes"
+                                                                : "meses"}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()}
+                                    <form
+                                        onSubmit={handleSavingSubmit}
+                                        className="space-y-4"
+                                    >
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
+                                                Cantidad a Ahorrar
+                                            </label>
+                                            <div className="relative">
+                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">
+                                                    $
+                                                </span>
+                                                <input
+                                                    type="number"
+                                                    step="0.01"
+                                                    placeholder="Ej. 500"
+                                                    value={
+                                                        savingForm.data.amount
+                                                    }
+                                                    onChange={(e) =>
+                                                        savingForm.setData(
+                                                            "amount",
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    className="w-full pl-7 pr-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                                    required
+                                                />
+                                            </div>
+                                            {savingForm.errors.amount && (
+                                                <p className="text-red-500 text-xs mt-1">
+                                                    {savingForm.errors.amount}
+                                                </p>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
+                                                Comentario (opcional)
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={savingForm.data.comment}
+                                                onChange={(e) =>
+                                                    savingForm.setData(
+                                                        "comment",
+                                                        e.target.value.toUpperCase(),
+                                                    )
+                                                }
+                                                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                                maxLength={255}
+                                            />
+                                        </div>
+                                        <button
+                                            type="submit"
+                                            disabled={savingForm.processing}
+                                            className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl text-sm transition-colors disabled:opacity-50"
+                                        >
+                                            {savingForm.processing
+                                                ? "Guardando..."
+                                                : "Guardar Ahorro"}
+                                        </button>
+                                    </form>
+                                </div>
+                            ) : selectedBudget.sub_accounts.length === 0 ? (
                                 <div className="bg-slate-50 dark:bg-slate-800/40 rounded-3xl border border-dashed border-slate-200 dark:border-slate-700 p-8 text-center">
                                     <p className="text-slate-500 dark:text-slate-400 text-sm mb-4">
                                         No has creado ninguna subcuenta para{" "}
@@ -691,6 +1156,14 @@ export default function Dashboard({ budgets, selectedMonth, budgetMonths }) {
                                                         <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100 truncate">
                                                             {sub.name}
                                                         </h4>
+                                                        <p
+                                                            className={`text-[10px] uppercase tracking-widest font-semibold mb-1 ${sub.type === "ahorro" ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}
+                                                        >
+                                                            {sub.type ===
+                                                            "ahorro"
+                                                                ? "Ahorro"
+                                                                : "Gasto"}
+                                                        </p>
                                                         <p className="text-xs text-slate-400 dark:text-slate-500">
                                                             Asignado:{" "}
                                                             {formatMoney(
@@ -712,6 +1185,14 @@ export default function Dashboard({ budgets, selectedMonth, budgetMonths }) {
                                                             )}
                                                         </span>
                                                     </div>
+                                                    {percentRemaining <= 20 && (
+                                                        <p className="text-[10px] font-bold text-rose-500 mt-2">
+                                                            {percentRemaining <=
+                                                            0
+                                                                ? "Límite alcanzado"
+                                                                : "Alerta: queda menos del 20%"}
+                                                        </p>
+                                                    )}
                                                     <div className="w-full bg-slate-100 dark:bg-slate-900 rounded-full h-1.5">
                                                         <div
                                                             className={`h-1.5 rounded-full transition-all duration-300 ${progressColor}`}
@@ -731,7 +1212,67 @@ export default function Dashboard({ budgets, selectedMonth, budgetMonths }) {
                         {/* DETALLE SUBCUENTA + HISTORIAL */}
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-4">
                             <div className="lg:col-span-2 space-y-6">
-                                {activeSubAccount ? (
+                                {selectedBudget.type === "ahorro" ? (
+                                    <div className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/50 rounded-3xl shadow-sm p-6 space-y-4">
+                                        <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                                            Historial de Ahorros
+                                        </h4>
+                                        {allExpenses.length === 0 ? (
+                                            <p className="text-sm text-slate-400 dark:text-slate-500 italic py-4 text-center">
+                                                No hay ahorros registrados aún.
+                                            </p>
+                                        ) : (
+                                            <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
+                                                {allExpenses.map((expense) => (
+                                                    <div
+                                                        key={expense.id}
+                                                        className="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-slate-900/20 border border-slate-100/50 dark:border-slate-800 rounded-2xl"
+                                                    >
+                                                        <div className="min-w-0 flex-1 pr-4">
+                                                            <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">
+                                                                {expense.comment ||
+                                                                    "Depósito"}
+                                                            </p>
+                                                            <p className="text-[10px] text-slate-400 dark:text-slate-500">
+                                                                {formatDate(
+                                                                    expense.date,
+                                                                )}
+                                                            </p>
+                                                        </div>
+                                                        <div className="flex items-center gap-3">
+                                                            <span className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400">
+                                                                +
+                                                                {formatMoney(
+                                                                    expense.amount,
+                                                                )}
+                                                            </span>
+                                                            <button
+                                                                onClick={() =>
+                                                                    openEditRecord(
+                                                                        expense,
+                                                                    )
+                                                                }
+                                                                className="text-slate-400 hover:text-emerald-500 text-xs font-bold"
+                                                            >
+                                                                Editar
+                                                            </button>
+                                                            <button
+                                                                onClick={() =>
+                                                                    handleDeleteExpense(
+                                                                        expense.id,
+                                                                    )
+                                                                }
+                                                                className="text-slate-400 hover:text-rose-500 text-xs font-bold"
+                                                            >
+                                                                Eliminar
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : activeSubAccount ? (
                                     <div className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/50 rounded-3xl shadow-sm p-6 space-y-6">
                                         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-4">
                                             <div className="flex items-center gap-3">
@@ -752,6 +1293,12 @@ export default function Dashboard({ budgets, selectedMonth, budgetMonths }) {
                                                 </div>
                                             </div>
                                             <div className="flex gap-2">
+                                                <button
+                                                    onClick={openSubAccountEdit}
+                                                    className="border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/40 text-slate-600 dark:text-slate-300 font-semibold px-3 py-2 rounded-xl text-xs transition-all"
+                                                >
+                                                    Editar
+                                                </button>
                                                 <button
                                                     onClick={() =>
                                                         setIsExpenseModalOpen(
@@ -841,6 +1388,16 @@ export default function Dashboard({ budgets, selectedMonth, budgetMonths }) {
                                                                             expense.amount,
                                                                         )}
                                                                     </span>
+                                                                    <button
+                                                                        onClick={() =>
+                                                                            openEditRecord(
+                                                                                expense,
+                                                                            )
+                                                                        }
+                                                                        className="text-slate-400 hover:text-emerald-500 text-xs font-bold"
+                                                                    >
+                                                                        Editar
+                                                                    </button>
                                                                     <button
                                                                         onClick={() =>
                                                                             handleDeleteExpense(
@@ -942,8 +1499,13 @@ export default function Dashboard({ budgets, selectedMonth, budgetMonths }) {
                                                             )}
                                                         </span>
                                                     </div>
-                                                    <span className="text-xs font-extrabold text-rose-600 dark:text-rose-400">
-                                                        -
+                                                    <span
+                                                        className={`text-xs font-extrabold ${selectedBudget.type === "ahorro" ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}
+                                                    >
+                                                        {selectedBudget.type ===
+                                                        "ahorro"
+                                                            ? "+"
+                                                            : "-"}
                                                         {formatMoney(
                                                             expense.amount,
                                                         )}
@@ -996,7 +1558,7 @@ export default function Dashboard({ budgets, selectedMonth, budgetMonths }) {
                         >
                             <div>
                                 <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
-                                    Nombre del Ahorro
+                                    Nombre de la Cuenta
                                 </label>
                                 <input
                                     type="text"
@@ -1014,6 +1576,58 @@ export default function Dashboard({ budgets, selectedMonth, budgetMonths }) {
                                 {budgetForm.errors.name && (
                                     <p className="text-red-500 text-xs mt-1">
                                         {budgetForm.errors.name}
+                                    </p>
+                                )}
+                            </div>
+                            {budgetForm.data.type === "ahorro" && (
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
+                                        Fecha Meta
+                                    </label>
+                                    <input
+                                        type="month"
+                                        min={selectedMonth}
+                                        value={budgetForm.data.target_month}
+                                        onChange={(e) =>
+                                            budgetForm.setData(
+                                                "target_month",
+                                                e.target.value,
+                                            )
+                                        }
+                                        className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                        required
+                                    />
+                                    <p className="text-[10px] text-slate-400 mt-1">
+                                        Mes y año en que quieres completar esta
+                                        meta.
+                                    </p>
+                                    {budgetForm.errors.target_month && (
+                                        <p className="text-red-500 text-xs mt-1">
+                                            {budgetForm.errors.target_month}
+                                        </p>
+                                    )}
+                                </div>
+                            )}
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
+                                    Tipo de Cuenta
+                                </label>
+                                <select
+                                    value={budgetForm.data.type}
+                                    onChange={(e) =>
+                                        budgetForm.setData(
+                                            "type",
+                                            e.target.value,
+                                        )
+                                    }
+                                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                >
+                                    <option value="ahorro">Ahorro</option>
+                                    <option value="gasto">Gasto</option>
+                                </select>
+                                {budgetForm.errors.type && (
+                                    <p className="text-red-500 text-xs mt-1">
+                                        {budgetForm.errors.type}
                                     </p>
                                 )}
                             </div>
@@ -1125,6 +1739,7 @@ export default function Dashboard({ budgets, selectedMonth, budgetMonths }) {
                                     </p>
                                 )}
                             </div>
+
                             <div>
                                 <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
                                     Monto Asignado
@@ -1298,6 +1913,251 @@ export default function Dashboard({ budgets, selectedMonth, budgetMonths }) {
                                     {expenseForm.processing
                                         ? "Guardando..."
                                         : "Guardar Gasto"}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+            {isBudgetEditOpen && selectedBudget && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+                    <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 w-full max-w-md shadow-2xl">
+                        <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-5">
+                            Editar cuenta
+                        </h3>
+                        <form
+                            onSubmit={handleBudgetEditSubmit}
+                            className="space-y-4"
+                        >
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">
+                                    Nombre
+                                </label>
+                                <input
+                                    required
+                                    maxLength={100}
+                                    value={budgetEditData.name}
+                                    onChange={(e) =>
+                                        setBudgetEditData((data) => ({
+                                            ...data,
+                                            name: e.target.value.toUpperCase(),
+                                        }))
+                                    }
+                                    className="w-full px-4 py-2.5 uppercase rounded-xl bg-slate-50 border border-slate-200 dark:border-slate-700"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">
+                                    {selectedBudget.type === "ahorro"
+                                        ? "Monto meta"
+                                        : "Monto inicial"}
+                                </label>
+                                <input
+                                    required
+                                    type="number"
+                                    min="0.01"
+                                    step="0.01"
+                                    value={budgetEditData.amount}
+                                    onChange={(e) =>
+                                        setBudgetEditData((data) => ({
+                                            ...data,
+                                            amount: e.target.value,
+                                        }))
+                                    }
+                                    className="w-full px-4 py-2.5 rounded-xl bg-slate-50  border border-slate-200 dark:border-slate-700"
+                                />
+                            </div>
+                            {selectedBudget.type === "ahorro" && (
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-400 uppercase mb-1">
+                                        Fecha meta
+                                    </label>
+                                    <input
+                                        required
+                                        type="month"
+                                        value={budgetEditData.target_month}
+                                        onChange={(e) =>
+                                            setBudgetEditData((data) => ({
+                                                ...data,
+                                                target_month: e.target.value,
+                                            }))
+                                        }
+                                        className="w-full px-4 py-2.5 rounded-xl bg-slate-50  border border-slate-200 dark:border-slate-700"
+                                    />
+                                </div>
+                            )}
+                            <div className="flex gap-3 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsBudgetEditOpen(false)}
+                                    className="w-1/2 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="w-1/2 py-2.5 bg-emerald-500 text-white font-bold rounded-xl text-sm"
+                                >
+                                    Guardar
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+            {isSubAccountEditOpen && activeSubAccount && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+                    <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 w-full max-w-md shadow-2xl">
+                        <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-1">
+                            Editar subcuenta
+                        </h3>
+                        <p className="text-xs text-slate-400 mb-5">
+                            Los gastos ya registrados se conservarán al ajustar
+                            el monto.
+                        </p>
+                        <form
+                            onSubmit={handleSubAccountEditSubmit}
+                            className="space-y-4"
+                        >
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">
+                                    Nombre
+                                </label>
+                                <input
+                                    required
+                                    maxLength={100}
+                                    value={subAccountEditData.name}
+                                    onChange={(e) =>
+                                        setSubAccountEditData((data) => ({
+                                            ...data,
+                                            name: e.target.value.toUpperCase(),
+                                        }))
+                                    }
+                                    className="w-full px-4 py-2.5 uppercase rounded-xl bg-slate-50 border border-slate-200 dark:border-slate-700"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">
+                                    Monto asignado
+                                </label>
+                                <input
+                                    required
+                                    type="number"
+                                    min="0.01"
+                                    step="0.01"
+                                    value={subAccountEditData.amount}
+                                    onChange={(e) =>
+                                        setSubAccountEditData((data) => ({
+                                            ...data,
+                                            amount: e.target.value,
+                                        }))
+                                    }
+                                    className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 dark:border-slate-700"
+                                />
+                            </div>
+                            <div className="flex gap-3 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setIsSubAccountEditOpen(false)
+                                    }
+                                    className="w-1/2 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="w-1/2 py-2.5 bg-emerald-500 text-white font-bold rounded-xl text-sm"
+                                >
+                                    Guardar
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+            {editingRecord && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+                    <div className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-3xl p-6 w-full max-w-md shadow-2xl">
+                        <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-1">
+                            Editar{" "}
+                            {editingRecord.is_saving ? "ahorro" : "gasto"}
+                        </h3>
+                        <p className="text-xs text-slate-400 mb-5">
+                            El saldo se recalculará automáticamente.
+                        </p>
+                        <form onSubmit={handleEditSubmit} className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+                                    Monto
+                                </label>
+                                <input
+                                    type="number"
+                                    min="0.01"
+                                    step="0.01"
+                                    required
+                                    value={editForm.data.amount}
+                                    onChange={(e) =>
+                                        editForm.setData(
+                                            "amount",
+                                            e.target.value,
+                                        )
+                                    }
+                                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100"
+                                />
+                                {editForm.errors.amount && (
+                                    <p className="text-red-500 text-xs mt-1">
+                                        {editForm.errors.amount}
+                                    </p>
+                                )}
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+                                    Comentario
+                                </label>
+                                <input
+                                    type="text"
+                                    maxLength={255}
+                                    value={editForm.data.comment}
+                                    onChange={(e) =>
+                                        editForm.setData(
+                                            "comment",
+                                            e.target.value.toUpperCase(),
+                                        )
+                                    }
+                                    className="w-full px-4 py-2.5 uppercase bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+                                    Fecha
+                                </label>
+                                <input
+                                    type="datetime-local"
+                                    required
+                                    value={editForm.data.date}
+                                    onChange={(e) =>
+                                        editForm.setData("date", e.target.value)
+                                    }
+                                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100"
+                                />
+                            </div>
+                            <div className="flex gap-3 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setEditingRecord(null)}
+                                    className="w-1/2 py-2.5 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-xl text-sm"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={editForm.processing}
+                                    className="w-1/2 py-2.5 bg-emerald-500 text-white font-bold rounded-xl text-sm"
+                                >
+                                    {editForm.processing
+                                        ? "Guardando..."
+                                        : "Guardar cambios"}
                                 </button>
                             </div>
                         </form>

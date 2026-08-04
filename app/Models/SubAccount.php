@@ -14,6 +14,7 @@ class SubAccount extends Model
     protected $fillable = [
         'budget_id',
         'name',
+        'type',
         'initial_amount',
         'current_amount',
     ];

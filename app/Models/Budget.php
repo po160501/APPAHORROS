@@ -15,9 +15,12 @@ class Budget extends Model
     protected $fillable = [
         'user_id',
         'month',
+        'target_month',
         'name',
+        'type',
         'initial_amount',
         'available_amount',
+        'income',
     ];
 
     public function user(): BelongsTo
