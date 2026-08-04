@@ -9,7 +9,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('budgets', function (Blueprint $table) {
+            $table->dropForeign(['user_id']);
             $table->dropUnique(['user_id', 'month']);
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
         });
     }
 

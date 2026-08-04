@@ -1,6 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, useForm, router, usePage } from '@inertiajs/react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 export default function Dashboard({ budgets, selectedMonth, budgetMonths }) {
     const { auth } = usePage().props;
@@ -97,6 +97,44 @@ export default function Dashboard({ budgets, selectedMonth, budgetMonths }) {
         }
     };
 
+    const budgetItems = [...budgets, '__create__'];
+    const subItems = selectedBudget
+        ? [...selectedBudget.sub_accounts, ...(remainingToAllocate > 0.01 ? ['__create_sub__'] : [])]
+        : [];
+
+    const CARD_W = 320;
+    const GAP = 16;
+    const STACK_OFFSET = 10;
+
+    const budgetTrackRef = useRef(null);
+    const [budgetActive, setBudgetActive] = useState(0);
+    const subTrackRef = useRef(null);
+    const [subActive, setSubActive] = useState(0);
+
+    useEffect(() => {
+        const el = budgetTrackRef.current;
+        if (!el) return;
+        const onScroll = () => setBudgetActive(Math.min(Math.round(el.scrollLeft / (CARD_W + GAP)), budgetItems.length - 1));
+        el.addEventListener('scroll', onScroll, { passive: true });
+        return () => el.removeEventListener('scroll', onScroll);
+    }, [budgetItems.length]);
+
+    useEffect(() => {
+        const el = subTrackRef.current;
+        if (!el) return;
+        const onScroll = () => setSubActive(Math.min(Math.round(el.scrollLeft / (CARD_W + GAP)), subItems.length - 1));
+        el.addEventListener('scroll', onScroll, { passive: true });
+        return () => el.removeEventListener('scroll', onScroll);
+    }, [subItems.length]);
+
+    const stackStyle = (index, active) => {
+        const diff = index - active;
+        const base = { transition: 'transform 0.35s ease, opacity 0.35s ease, scale 0.35s ease', flexShrink: 0, scrollSnapAlign: 'center' };
+        if (diff === 0) return { ...base, transform: 'scale(1.06)', zIndex: 10, opacity: 1 };
+        if (diff < 0) return { ...base, transform: `translateX(${diff * STACK_OFFSET}px) scale(0.92)`, opacity: Math.max(0.4, 1 + diff * 0.25), zIndex: index };
+        return { ...base, transform: 'scale(0.92)', opacity: 0.6, zIndex: index };
+    };
+
     const handle3DMove = (e) => {
         const card = e.currentTarget;
         const { left, top, width, height } = card.getBoundingClientRect();
@@ -152,71 +190,59 @@ export default function Dashboard({ budgets, selectedMonth, budgetMonths }) {
             <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto space-y-8">
 
                 {/* TARJETA PRINCIPAL */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                    {budgets.map(budget => {
+                <div
+                    ref={budgetTrackRef}
+                    className="flex gap-4 overflow-x-auto pb-3 items-center"
+                    style={{ scrollSnapType: 'x mandatory', scrollbarWidth: 'none', msOverflowStyle: 'none', paddingLeft: 'calc(50% - 160px)', paddingRight: 'calc(50% - 160px)' }}
+                >
+                    {budgetItems.map((budget, index) => {
+                        if (budget === '__create__') return (
+                            <div key="create"
+                                onClick={() => setIsBudgetModalOpen(true)}
+                                className="cursor-pointer border border-dashed border-emerald-200 dark:border-emerald-800/50 rounded-3xl p-5 flex flex-col justify-center items-center text-center bg-emerald-50/30 dark:bg-emerald-900/10 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors"
+                                style={{ ...stackStyle(index, budgetActive), width: CARD_W, minWidth: CARD_W, minHeight: 160 }}
+                            >
+                                <div className="p-2.5 bg-emerald-100 dark:bg-emerald-900/40 rounded-full text-emerald-500 dark:text-emerald-400 mb-2">
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>
+                                </div>
+                                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">Crear Cuenta</span>
+                                <span className="text-[10px] text-slate-400">Nueva cuenta principal</span>
+                            </div>
+                        );
                         const isSelected = selectedBudgetId === budget.id;
                         const budgetExpenses = budget.sub_accounts.flatMap(s => s.expenses);
                         const budgetTotal = budgetExpenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
                         const pct = budget.initial_amount > 0 ? Math.min(100, (parseFloat(budget.available_amount) / parseFloat(budget.initial_amount)) * 100) : 0;
-
-                        const cardBg = isSelected
-                            ? { backgroundImage: coverImageUrl ? `url(${coverImageUrl})` : undefined, backgroundSize: 'cover', backgroundPosition: 'center', backgroundColor: coverImageUrl ? undefined : '#1e293b' }
-                            : {};
-                        const cardClass = `rounded-3xl border ${
-                            isSelected
-                                ? 'border-transparent text-white'
-                                : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700/50'
-                        }`;
-
                         return (
-                            <div
-                                key={budget.id}
+                            <div key={budget.id}
                                 onClick={() => setSelectedBudgetId(isSelected ? null : budget.id)}
                                 onMouseMove={handle3DMove}
                                 onMouseLeave={handle3DLeave}
-                                className={`cursor-pointer p-5 rounded-3xl border transition-all relative overflow-hidden ${
+                                className={`cursor-pointer p-5 rounded-3xl border relative overflow-hidden ${
                                     isSelected
-                                        ? 'border-transparent text-white shadow-xl'
+                                        ? 'border-transparent shadow-xl'
                                         : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700/50 shadow-sm hover:border-emerald-200 dark:hover:border-emerald-800/50'
                                 }`}
-                                style={isSelected ? {
-                                    backgroundImage: coverImageUrl ? `url(${coverImageUrl})` : undefined,
-                                    backgroundSize: 'cover',
-                                    backgroundPosition: 'center',
-                                    backgroundColor: coverImageUrl ? undefined : '#1e293b',
-                                    transition: 'transform 0.1s ease',
-                                } : { transition: 'transform 0.1s ease' }}
+                                style={{
+                                    ...stackStyle(index, budgetActive),
+                                    width: CARD_W, minWidth: CARD_W,
+                                    ...(isSelected ? { backgroundImage: coverImageUrl ? `url(${coverImageUrl})` : undefined, backgroundSize: 'cover', backgroundPosition: 'center', backgroundColor: coverImageUrl ? undefined : '#1e293b' } : {})
+                                }}
                             >
-                                {isSelected && (
-                                    <div className="absolute inset-0" style={{ background: coverImageUrl ? 'rgba(0,0,0,0.45)' : 'rgba(15,23,42,0.6)' }} />
-                                )}
-                                <div className={`relative z-10 text-xs font-bold uppercase tracking-wider mb-1 ${isSelected ? 'text-white/70' : 'text-slate-400 dark:text-slate-500'}`}>{budget.name}</div>
+                                {isSelected && <div className="absolute inset-0 rounded-3xl" style={{ background: coverImageUrl ? 'rgba(0,0,0,0.2)' : 'rgba(15,23,42,0.4)' }} />}
+                                <div className={`relative z-10 text-xs font-bold uppercase tracking-wider mb-1 ${isSelected ? 'text-white/80' : 'text-slate-400 dark:text-slate-500'}`}>{budget.name}</div>
                                 <div className={`relative z-10 text-2xl font-extrabold mb-1 ${isSelected ? 'text-white' : 'text-slate-800 dark:text-slate-100'}`}>{formatMoney(budget.available_amount)}</div>
                                 <div className={`relative z-10 text-[10px] font-semibold mb-3 ${isSelected ? 'text-rose-200' : 'text-rose-400'}`}>Gastos: {formatMoney(budgetTotal)}</div>
                                 <div className={`relative z-10 w-full rounded-full h-1.5 mb-2 ${isSelected ? 'bg-white/20' : 'bg-slate-100 dark:bg-slate-700'}`}>
                                     <div className={`h-1.5 rounded-full transition-all duration-300 ${isSelected ? 'bg-white' : 'bg-emerald-500'}`} style={{ width: `${pct}%` }}></div>
                                 </div>
-                                <div className={`relative z-10 flex justify-between text-[10px] ${isSelected ? 'text-white/60' : 'text-slate-400 dark:text-slate-500'}`}>
+                                <div className={`relative z-10 flex justify-between text-[10px] ${isSelected ? 'text-white/70' : 'text-slate-400 dark:text-slate-500'}`}>
                                     <span>Inicial: {formatMoney(budget.initial_amount)}</span>
                                     <span>{budget.sub_accounts.length} subcuentas</span>
                                 </div>
                             </div>
                         );
                     })}
-
-                    {/* Botón Crear Cuenta */}
-                    <div
-                        onClick={() => setIsBudgetModalOpen(true)}
-                        className="cursor-pointer border border-dashed border-emerald-200 dark:border-emerald-800/50 rounded-3xl p-5 flex flex-col justify-center items-center text-center bg-emerald-50/30 dark:bg-emerald-900/10 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:border-emerald-300 dark:hover:border-emerald-700 transition-all min-h-[142px]"
-                    >
-                        <div className="p-2.5 bg-emerald-100 dark:bg-emerald-900/40 rounded-full text-emerald-500 dark:text-emerald-400 mb-2">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-                            </svg>
-                        </div>
-                        <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">Crear Cuenta</span>
-                        <span className="text-[10px] text-slate-400">Nueva cuenta principal</span>
-                    </div>
                 </div>
 
                 {/* DETALLE DE CUENTA SELECCIONADA */}
@@ -238,26 +264,43 @@ export default function Dashboard({ budgets, selectedMonth, budgetMonths }) {
                                     </button>
                                 </div>
                             ) : (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-14 gap-y-8 pl-10">
-                                    {selectedBudget.sub_accounts.map(sub => {
+                                <div
+                                    ref={subTrackRef}
+                                    className="flex gap-4 overflow-x-auto pb-3 items-center"
+                                    style={{ scrollSnapType: 'x mandatory', scrollbarWidth: 'none', msOverflowStyle: 'none', paddingLeft: 'calc(50% - 160px)', paddingRight: 'calc(50% - 160px)' }}
+                                >
+                                    {subItems.map((sub, index) => {
+                                        if (sub === '__create_sub__') return (
+                                            <div key="create-sub"
+                                                onClick={() => setIsSubAccountModalOpen(true)}
+                                                className="cursor-pointer border border-dashed border-slate-200 dark:border-slate-700 rounded-3xl p-5 flex flex-col justify-center items-center text-center bg-slate-50/50 dark:bg-slate-800/10 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600 transition-colors"
+                                                style={{ ...stackStyle(index, subActive), width: CARD_W, minWidth: CARD_W, minHeight: 160 }}
+                                            >
+                                                <div className="p-2.5 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-400 dark:text-slate-500 mb-2">
+                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>
+                                                </div>
+                                                <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Crear Subcuenta</span>
+                                                <span className="text-[10px] text-slate-400">Disponible: {formatMoney(remainingToAllocate)}</span>
+                                            </div>
+                                        );
                                         const percentRemaining = (parseFloat(sub.current_amount) / parseFloat(sub.initial_amount)) * 100;
-                                        let progressColor = "bg-emerald-500";
-                                        let bgHoverColor = "hover:border-emerald-200 dark:hover:border-emerald-800/50";
-                                        if (percentRemaining <= 20) { progressColor = "bg-rose-500"; bgHoverColor = "hover:border-rose-200 dark:hover:border-rose-800/50"; }
-                                        else if (percentRemaining <= 50) { progressColor = "bg-amber-500"; bgHoverColor = "hover:border-amber-200 dark:hover:border-amber-800/50"; }
+                                        let progressColor = 'bg-emerald-500';
+                                        let bgHoverColor = 'hover:border-emerald-200 dark:hover:border-emerald-800/50';
+                                        if (percentRemaining <= 20) { progressColor = 'bg-rose-500'; bgHoverColor = 'hover:border-rose-200 dark:hover:border-rose-800/50'; }
+                                        else if (percentRemaining <= 50) { progressColor = 'bg-amber-500'; bgHoverColor = 'hover:border-amber-200 dark:hover:border-amber-800/50'; }
                                         const isSelected = selectedSubAccountId === sub.id;
-
                                         return (
                                             <div key={sub.id}
+                                                onClick={() => setSelectedSubAccountId(isSelected ? null : sub.id)}
                                                 onMouseMove={handle3DMove}
                                                 onMouseLeave={handle3DLeave}
-                                                onClick={() => setSelectedSubAccountId(isSelected ? null : sub.id)}
-                                                style={{ transition: 'transform 0.1s ease' }}
-                                                className={`cursor-pointer p-5 rounded-3xl border transition-colors ${
+                                                className={`cursor-pointer p-5 rounded-3xl border ${
                                                     isSelected
                                                         ? 'bg-slate-100 dark:bg-slate-700 border-slate-400 dark:border-slate-500'
                                                         : `bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700/50 ${bgHoverColor}`
-                                                }`}>
+                                                }`}
+                                                style={{ ...stackStyle(index, subActive), width: CARD_W, minWidth: CARD_W }}
+                                            >
                                                 <div className="flex items-center gap-4 mb-4">
                                                     {getSubAccountIcon(sub.name)}
                                                     <div className="flex-1 min-w-0">
@@ -277,22 +320,6 @@ export default function Dashboard({ budgets, selectedMonth, budgetMonths }) {
                                             </div>
                                         );
                                     })}
-
-                                    {/* Crear Subcuenta */}
-                                    {remainingToAllocate > 0.01 && (
-                                        <div
-                                            onClick={() => setIsSubAccountModalOpen(true)}
-                                            className="cursor-pointer border border-dashed border-slate-200 dark:border-slate-700 rounded-3xl p-5 flex flex-col justify-center items-center text-center bg-slate-50/50 dark:bg-slate-800/10 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600 transition-all min-h-[142px]"
-                                        >
-                                            <div className="p-2.5 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-400 dark:text-slate-500 mb-2">
-                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-                                                </svg>
-                                            </div>
-                                            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Crear Subcuenta</span>
-                                            <span className="text-[10px] text-slate-400">Disponible: {formatMoney(remainingToAllocate)}</span>
-                                        </div>
-                                    )}
                                 </div>
                             )}
                         </div>
