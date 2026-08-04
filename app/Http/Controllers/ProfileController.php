@@ -7,8 +7,8 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Redirect;
-use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -23,7 +23,7 @@ class ProfileController extends Controller
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
             'status' => session('status'),
             'coverImage' => $request->user()->cover_image
-                ? asset('storage/' . $request->user()->cover_image)
+                ? asset($request->user()->cover_image)
                 : null,
         ]);
     }
@@ -33,13 +33,28 @@ class ProfileController extends Controller
         $request->validate(['cover' => 'required|image|max:4096']);
 
         $user = $request->user();
+        $folder = 'covers';
 
         if ($user->cover_image) {
-            \Illuminate\Support\Facades\Storage::disk('public')->delete($user->cover_image);
+            $oldPublicPath = public_path($user->cover_image);
+            $oldStoragePath = storage_path('app/public/' . ltrim($user->cover_image, '/'));
+
+            if (File::exists($oldPublicPath)) {
+                File::delete($oldPublicPath);
+            } elseif (File::exists($oldStoragePath)) {
+                File::delete($oldStoragePath);
+            }
         }
 
-        $path = $request->file('cover')->store('covers', 'public');
-        $user->cover_image = $path;
+        if (! File::exists(public_path($folder))) {
+            File::makeDirectory(public_path($folder), 0755, true);
+        }
+
+        $file = $request->file('cover');
+        $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+        $file->move(public_path($folder), $filename);
+
+        $user->cover_image = $folder . '/' . $filename;
         $user->save();
 
         return Redirect::route('profile.edit')->with('status', 'cover-updated');

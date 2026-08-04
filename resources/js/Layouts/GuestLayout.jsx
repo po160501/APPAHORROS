@@ -29,14 +29,6 @@ export default function GuestLayout({ children }) {
                         Organiza tu dinero en cuentas y subcuentas, registra tus gastos y lleva el control de cada mes.
                     </p>
                 </div>
-                <div className="relative flex gap-6">
-                    {[['📊', 'Control total'], ['💰', 'Ahorra más'], ['📅', 'Por mes']].map(([icon, label]) => (
-                        <div key={label} className="text-center">
-                            <div className="text-2xl mb-1">{icon}</div>
-                            <div className="text-emerald-100 text-xs font-semibold">{label}</div>
-                        </div>
-                    ))}
-                </div>
             </div>
 
             {/* Right panel - form */}
