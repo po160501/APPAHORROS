@@ -84,6 +84,23 @@ export default function Dashboard({
     const spendingPctOfIncome =
         income > 0 ? (monthlyExpenses / income) * 100 : 0;
     const savingPctOfIncome = income > 0 ? (monthlySavings / income) * 100 : 0;
+    const totalAvailableAmount = budgets.reduce(
+        (sum, budget) => sum + parseFloat(budget.available_amount),
+        0,
+    );
+    const accountBalances = budgets.map((budget) => ({
+        id: budget.id,
+        name: budget.name,
+        type: budget.type,
+        available_amount: parseFloat(budget.available_amount),
+    }));
+    const transferForm = useForm({
+        from_budget_id: budgets?.[0]?.id || "",
+        to_budget_id: budgets?.[1]?.id || "",
+        amount: "",
+        comment: "",
+        date: new Date().toISOString().slice(0, 16),
+    });
     const previousCategories = prevBudgets
         .flatMap((budget) => budget.sub_accounts)
         .reduce((totals, sub) => {
@@ -95,6 +112,24 @@ export default function Dashboard({
                 );
             return totals;
         }, {});
+
+    const handleTransferSubmit = (e) => {
+        e.preventDefault();
+        transferForm.post(route("account-transfers.store"), {
+            onSuccess: () =>
+                transferForm.reset("amount", "comment", "date"),
+            preserveScroll: true,
+        });
+    };
+
+    useEffect(() => {
+        if (budgets.length >= 2 && !transferForm.data.from_budget_id) {
+            transferForm.setData("from_budget_id", budgets[0].id);
+        }
+        if (budgets.length >= 2 && !transferForm.data.to_budget_id) {
+            transferForm.setData("to_budget_id", budgets[1].id);
+        }
+    }, [budgets]);
 
     const formatMoney = (amount) =>
         new Intl.NumberFormat("es-MX", {
@@ -721,6 +756,152 @@ export default function Dashboard({
                         </div>
                     )}
                 </section>
+                <section className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/50 rounded-3xl shadow-sm p-5 sm:p-6 space-y-5">
+                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                        <div>
+                            <p className="text-xs uppercase tracking-wider font-semibold text-slate-400 dark:text-slate-500">
+                                Total en cuentas principales
+                            </p>
+                            <h3 className="text-2xl font-extrabold text-slate-900 dark:text-white">
+                                {formatMoney(totalAvailableAmount)}
+                            </h3>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full lg:w-auto">
+                            {accountBalances.map((account) => (
+                                <div
+                                    key={account.id}
+                                    className="rounded-3xl bg-slate-50 dark:bg-slate-900/40 p-4 border border-slate-100 dark:border-slate-700"
+                                >
+                                    <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400">
+                                        {account.name}
+                                    </p>
+                                    <p className="text-xl font-bold text-slate-800 dark:text-slate-100">
+                                        {formatMoney(account.available_amount)}
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    {budgets.length >= 2 ? (
+                        <form
+                            onSubmit={handleTransferSubmit}
+                            className="grid gap-4 sm:grid-cols-[1fr_1fr] items-end"
+                        >
+                            <div className="grid gap-4 sm:col-span-2 lg:grid-cols-[1fr_1fr_1fr]">
+                                <div>
+                                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+                                        Desde
+                                    </label>
+                                    <select
+                                        value={transferForm.data.from_budget_id}
+                                        onChange={(e) =>
+                                            transferForm.setData(
+                                                "from_budget_id",
+                                                e.target.value,
+                                            )
+                                        }
+                                        className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-800 dark:text-slate-100"
+                                    >
+                                        {budgets.map((budget) => (
+                                            <option key={budget.id} value={budget.id}>
+                                                {budget.name} - {formatMoney(budget.available_amount)}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+                                        Hacia
+                                    </label>
+                                    <select
+                                        value={transferForm.data.to_budget_id}
+                                        onChange={(e) =>
+                                            transferForm.setData(
+                                                "to_budget_id",
+                                                e.target.value,
+                                            )
+                                        }
+                                        className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-800 dark:text-slate-100"
+                                    >
+                                        {budgets.map((budget) => (
+                                            <option key={budget.id} value={budget.id}>
+                                                {budget.name} - {formatMoney(budget.available_amount)}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+                                        Monto
+                                    </label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        min="0.01"
+                                        value={transferForm.data.amount}
+                                        onChange={(e) =>
+                                            transferForm.setData(
+                                                "amount",
+                                                e.target.value,
+                                            )
+                                        }
+                                        className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-800 dark:text-slate-100"
+                                        placeholder="0.00"
+                                        required
+                                    />
+                                </div>
+                            </div>
+                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-[1fr_2fr]">
+                                <div>
+                                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+                                        Fecha
+                                    </label>
+                                    <input
+                                        type="datetime-local"
+                                        value={transferForm.data.date}
+                                        onChange={(e) =>
+                                            transferForm.setData("date", e.target.value)
+                                        }
+                                        className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-800 dark:text-slate-100"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+                                        Nota
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={transferForm.data.comment}
+                                        onChange={(e) =>
+                                            transferForm.setData(
+                                                "comment",
+                                                e.target.value,
+                                            )
+                                        }
+                                        className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-800 dark:text-slate-100"
+                                        placeholder="Opcional"
+                                    />
+                                </div>
+                                <button
+                                    type="submit"
+                                    disabled={
+                                        transferForm.processing ||
+                                        transferForm.data.from_budget_id ===
+                                            transferForm.data.to_budget_id
+                                    }
+                                    className="w-full rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-4 py-3"
+                                >
+                                    Transferir
+                                </button>
+                            </div>
+                        </form>
+                    ) : (
+                        <div className="rounded-3xl bg-slate-50 dark:bg-slate-900/40 p-4 border border-slate-100 dark:border-slate-700 text-sm text-slate-500">
+                            Necesitas al menos dos cuentas principales para transferir dinero.
+                        </div>
+                    )}
+                </section>
                 {/* TARJETA PRINCIPAL */}
                 <div
                     ref={budgetTrackRef}
@@ -830,6 +1011,19 @@ export default function Dashboard({
                                         }}
                                     />
                                 )}
+                                <span
+                                    className={`absolute top-4 right-4 z-10 px-2.5 py-1 rounded-full text-[10px] font-extrabold tracking-wider ${
+                                        budget.type === "ahorro"
+                                            ? isSelected
+                                                ? "bg-emerald-400/25 text-emerald-100 border border-emerald-200/40"
+                                                : "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300"
+                                            : isSelected
+                                              ? "bg-rose-400/25 text-rose-100 border border-rose-200/40"
+                                              : "bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300"
+                                    }`}
+                                >
+                                    {budget.type === "ahorro" ? "AHORRO" : "GASTO"}
+                                </span>
                                 <div
                                     className={`relative z-10 text-xs font-bold uppercase tracking-wider mb-1 ${isSelected ? "text-white/80" : "text-slate-400 dark:text-slate-500"}`}
                                 >
@@ -899,7 +1093,7 @@ export default function Dashboard({
                                 onClick={openBudgetEdit}
                                 className="px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-emerald-600"
                             >
-                                Editar cuenta
+                                Editar
                             </button>
                         </div>
                         {/* SUBCUENTAS */}
@@ -1308,16 +1502,6 @@ export default function Dashboard({
                                                     className="bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white font-bold px-4 py-2 rounded-xl text-xs transition-all shadow-md shadow-emerald-500/15"
                                                 >
                                                     Nuevo Gasto
-                                                </button>
-                                                <button
-                                                    onClick={() =>
-                                                        setSelectedSubAccountId(
-                                                            null,
-                                                        )
-                                                    }
-                                                    className="border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/40 text-slate-600 dark:text-slate-300 font-semibold px-3 py-2 rounded-xl text-xs transition-all"
-                                                >
-                                                    Cerrar
                                                 </button>
                                             </div>
                                         </div>
@@ -1923,7 +2107,7 @@ export default function Dashboard({
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
                     <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 w-full max-w-md shadow-2xl">
                         <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-5">
-                            Editar cuenta
+                            Editar
                         </h3>
                         <form
                             onSubmit={handleBudgetEditSubmit}
@@ -2009,7 +2193,7 @@ export default function Dashboard({
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
                     <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 w-full max-w-md shadow-2xl">
                         <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-1">
-                            Editar subcuenta
+                            Editar
                         </h3>
                         <p className="text-xs text-slate-400 mb-5">
                             Los gastos ya registrados se conservarán al ajustar

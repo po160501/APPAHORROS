@@ -6,6 +6,7 @@ use App\Models\Budget;
 use App\Models\SubAccount;
 use App\Models\Expense;
 use App\Models\MonthlyIncome;
+use App\Models\AccountTransfer;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -104,6 +105,31 @@ class BudgetController extends Controller
         );
 
         return back()->with('success', 'Ingreso actualizado.');
+    }
+
+    public function storeAccountTransfer(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'from_budget_id' => 'required|different:to_budget_id|exists:budgets,id',
+            'to_budget_id' => 'required|exists:budgets,id',
+            'amount' => 'required|numeric|min:0.01',
+            'comment' => 'nullable|string|max:255',
+            'date' => 'required|date',
+        ]);
+
+        DB::transaction(function () use ($request) {
+            $from = Budget::lockForUpdate()->findOrFail($request->from_budget_id);
+            $to = Budget::lockForUpdate()->findOrFail($request->to_budget_id);
+            abort_unless($from->user_id === $request->user()->id && $to->user_id === $request->user()->id, 403);
+
+            AccountTransfer::create($request->only('from_budget_id', 'to_budget_id', 'amount', 'comment', 'date'));
+            $from->available_amount -= $request->amount;
+            $to->available_amount += $request->amount;
+            $from->save();
+            $to->save();
+        });
+
+        return back()->with('success', 'Transferencia realizada.');
     }
 
     public function updateBudget(Request $request, Budget $budget): RedirectResponse

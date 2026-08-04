@@ -2,4 +2,29 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Campos legibles tanto en modo claro como oscuro. */
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea {
+    background-color: #020617 !important;
+    color: #f8fafc !important;
+    border-color: #334155 !important;
+}
+
+input:not([type="checkbox"]):not([type="radio"])::placeholder,
+textarea::placeholder {
+    color: #94a3b8 !important;
+}
+
+select option {
+    background-color: #020617;
+    color: #f8fafc;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):-webkit-autofill,
+input:not([type="checkbox"]):not([type="radio"]):-webkit-autofill:hover,
+input:not([type="checkbox"]):not([type="radio"]):-webkit-autofill:focus {
+    -webkit-text-fill-color: #f8fafc;
+    -webkit-box-shadow: 0 0 0 1000px #020617 inset;
+}
 

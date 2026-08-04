@@ -17,6 +17,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/budgets', [BudgetController::class, 'storeBudget'])->name('budgets.store');
     Route::put('/budgets/{budget}', [BudgetController::class, 'updateBudget'])->name('budgets.update');
     Route::post('/income', [BudgetController::class, 'updateIncome'])->name('income.update');
+    Route::post('/account-transfers', [BudgetController::class, 'storeAccountTransfer'])->name('account-transfers.store');
     Route::post('/sub-accounts', [BudgetController::class, 'storeSubAccount'])->name('sub-accounts.store');
     Route::put('/sub-accounts/{subAccount}', [BudgetController::class, 'updateSubAccount'])->name('sub-accounts.update');
     Route::post('/expenses', [BudgetController::class, 'storeExpense'])->name('expenses.store');
