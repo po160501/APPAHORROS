@@ -116,8 +116,7 @@ export default function Dashboard({
     const handleTransferSubmit = (e) => {
         e.preventDefault();
         transferForm.post(route("account-transfers.store"), {
-            onSuccess: () =>
-                transferForm.reset("amount", "comment", "date"),
+            onSuccess: () => transferForm.reset("amount", "comment", "date"),
             preserveScroll: true,
         });
     };
@@ -600,9 +599,6 @@ export default function Dashboard({
                             <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">
                                 Resumen de {formatMonthSpanish(selectedMonth)}
                             </h3>
-                            <p className="text-xs text-slate-400">
-                                Tu balance, categorías y avance mensual.
-                            </p>
                         </div>
                         <form
                             onSubmit={handleIncomeSubmit}
@@ -803,8 +799,14 @@ export default function Dashboard({
                                         className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-800 dark:text-slate-100"
                                     >
                                         {budgets.map((budget) => (
-                                            <option key={budget.id} value={budget.id}>
-                                                {budget.name} - {formatMoney(budget.available_amount)}
+                                            <option
+                                                key={budget.id}
+                                                value={budget.id}
+                                            >
+                                                {budget.name} -{" "}
+                                                {formatMoney(
+                                                    budget.available_amount,
+                                                )}
                                             </option>
                                         ))}
                                     </select>
@@ -824,8 +826,14 @@ export default function Dashboard({
                                         className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-800 dark:text-slate-100"
                                     >
                                         {budgets.map((budget) => (
-                                            <option key={budget.id} value={budget.id}>
-                                                {budget.name} - {formatMoney(budget.available_amount)}
+                                            <option
+                                                key={budget.id}
+                                                value={budget.id}
+                                            >
+                                                {budget.name} -{" "}
+                                                {formatMoney(
+                                                    budget.available_amount,
+                                                )}
                                             </option>
                                         ))}
                                     </select>
@@ -860,7 +868,10 @@ export default function Dashboard({
                                         type="datetime-local"
                                         value={transferForm.data.date}
                                         onChange={(e) =>
-                                            transferForm.setData("date", e.target.value)
+                                            transferForm.setData(
+                                                "date",
+                                                e.target.value,
+                                            )
                                         }
                                         className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-800 dark:text-slate-100"
                                         required
@@ -898,7 +909,8 @@ export default function Dashboard({
                         </form>
                     ) : (
                         <div className="rounded-3xl bg-slate-50 dark:bg-slate-900/40 p-4 border border-slate-100 dark:border-slate-700 text-sm text-slate-500">
-                            Necesitas al menos dos cuentas principales para transferir dinero.
+                            Necesitas al menos dos cuentas principales para
+                            transferir dinero.
                         </div>
                     )}
                 </section>
@@ -1022,7 +1034,9 @@ export default function Dashboard({
                                               : "bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300"
                                     }`}
                                 >
-                                    {budget.type === "ahorro" ? "AHORRO" : "GASTO"}
+                                    {budget.type === "ahorro"
+                                        ? "AHORRO"
+                                        : "GASTO"}
                                 </span>
                                 <div
                                     className={`relative z-10 text-xs font-bold uppercase tracking-wider mb-1 ${isSelected ? "text-white/80" : "text-slate-400 dark:text-slate-500"}`}
@@ -1501,7 +1515,7 @@ export default function Dashboard({
                                                     }
                                                     className="bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white font-bold px-4 py-2 rounded-xl text-xs transition-all shadow-md shadow-emerald-500/15"
                                                 >
-                                                    Nuevo Gasto
+                                                    Nuevo
                                                 </button>
                                             </div>
                                         </div>
