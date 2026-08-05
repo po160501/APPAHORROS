@@ -1021,7 +1021,7 @@ export default function Dashboard({
                 {/* TARJETA PRINCIPAL */}
                 <div
                     ref={budgetTrackRef}
-                    className="flex gap-4 overflow-x-auto pb-3 items-center"
+                    className="flex gap-4 overflow-x-auto py-6 items-center"
                     style={{
                         scrollSnapType: "x mandatory",
                         scrollbarWidth: "none",
@@ -1041,7 +1041,7 @@ export default function Dashboard({
                                         ...stackStyle(index, budgetActive),
                                         width: CARD_W,
                                         minWidth: CARD_W,
-                                        minHeight: 160,
+                                        minHeight: 190,
                                     }}
                                 >
                                     <div className="p-2.5 bg-emerald-100 dark:bg-emerald-900/40 rounded-full text-emerald-500 dark:text-emerald-400 mb-2">
@@ -1094,7 +1094,7 @@ export default function Dashboard({
                                 }
                                 onMouseMove={handle3DMove}
                                 onMouseLeave={handle3DLeave}
-                                className={`cursor-pointer p-5 rounded-3xl border relative overflow-hidden ${
+                                className={`cursor-pointer p-6 rounded-3xl border relative overflow-hidden flex flex-col justify-between ${
                                     isSelected
                                         ? "border-transparent shadow-xl"
                                         : "bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700/50 shadow-sm hover:border-emerald-200 dark:hover:border-emerald-800/50"
@@ -1103,6 +1103,7 @@ export default function Dashboard({
                                     ...stackStyle(index, budgetActive),
                                     width: CARD_W,
                                     minWidth: CARD_W,
+                                    minHeight: 190,
                                     ...(isSelected
                                         ? {
                                               backgroundImage: coverImageUrl
@@ -1164,53 +1165,58 @@ export default function Dashboard({
                                         ? "AHORRO"
                                         : "GASTO"}
                                 </span>
-                                <div
-                                    className={`relative z-10 text-xs font-bold uppercase tracking-wider mb-1 ${isSelected ? "text-white/80" : "text-slate-400 dark:text-slate-500"}`}
-                                >
-                                    {budget.name}
-                                </div>
-                                <div
-                                    className={`relative z-10 text-2xl font-extrabold mb-1 ${isSelected ? "text-white" : "text-slate-800 dark:text-slate-100"}`}
-                                >
-                                    {formatMoney(budget.available_amount)}
-                                </div>
-                                <div
-                                    className={`relative z-10 text-[10px] font-semibold mb-3 ${
-                                        isSelected
-                                            ? budget.type === "ahorro"
-                                                ? "text-emerald-200"
-                                                : "text-rose-200"
-                                            : budget.type === "ahorro"
-                                              ? "text-emerald-500"
-                                              : "text-rose-400"
-                                    }`}
-                                >
-                                    {budget.type === "ahorro"
-                                        ? `Meta: ${formatMoney(budget.initial_amount)}${budget.target_month ? ` · ${formatMonthSpanish(budget.target_month)}` : ""}`
-                                        : `Gastos: ${formatMoney(budgetTotal)}`}
-                                </div>
-                                <div
-                                    className={`relative z-10 w-full rounded-full h-1.5 mb-2 ${isSelected ? "bg-white/20" : "bg-slate-100 dark:bg-slate-700"}`}
-                                >
+                                <div className="relative z-10">
                                     <div
-                                        className={`h-1.5 rounded-full transition-all duration-300 ${isSelected ? "bg-white" : budget.type === "ahorro" ? "bg-emerald-400" : "bg-emerald-500"}`}
-                                        style={{ width: `${pct}%` }}
-                                    ></div>
+                                        className={`text-xs font-bold uppercase tracking-wider mb-2 ${isSelected ? "text-white/80" : "text-slate-400 dark:text-slate-500"}`}
+                                    >
+                                        {budget.name}
+                                    </div>
+                                    <div
+                                        className={`text-3xl font-extrabold mb-1 ${isSelected ? "text-white" : "text-slate-800 dark:text-slate-100"}`}
+                                    >
+                                        {formatMoney(budget.available_amount)}
+                                    </div>
+                                    <div
+                                        className={`text-xs font-semibold mt-1 ${
+                                            isSelected
+                                                ? budget.type === "ahorro"
+                                                    ? "text-emerald-200"
+                                                    : "text-rose-200"
+                                                : budget.type === "ahorro"
+                                                  ? "text-emerald-500"
+                                                  : "text-rose-400"
+                                        }`}
+                                    >
+                                        {budget.type === "ahorro"
+                                            ? `Meta: ${formatMoney(budget.initial_amount)}${budget.target_month ? ` · ${formatMonthSpanish(budget.target_month)}` : ""}`
+                                            : `Gastos: ${formatMoney(budgetTotal)}`}
+                                    </div>
                                 </div>
-                                <div
-                                    className={`relative z-10 flex justify-between text-[10px] ${isSelected ? "text-white/70" : "text-slate-400 dark:text-slate-500"}`}
-                                >
-                                    <span>
-                                        {budget.type === "ahorro"
-                                            ? "Meta"
-                                            : "Inicial"}
-                                        : {formatMoney(budget.initial_amount)}
-                                    </span>
-                                    <span>
-                                        {budget.type === "ahorro"
-                                            ? `${Math.min(100, Math.round(pct))}%`
-                                            : `${budget.sub_accounts.length} subcuentas`}
-                                    </span>
+                                <div className="relative z-10">
+                                    <div
+                                        className={`w-full rounded-full h-2 mb-3 ${isSelected ? "bg-white/20" : "bg-slate-100 dark:bg-slate-700"}`}
+                                    >
+                                        <div
+                                            className={`h-2 rounded-full transition-all duration-300 ${isSelected ? "bg-white" : budget.type === "ahorro" ? "bg-emerald-400" : "bg-emerald-500"}`}
+                                            style={{ width: `${pct}%` }}
+                                        ></div>
+                                    </div>
+                                    <div
+                                        className={`flex justify-between text-xs ${isSelected ? "text-white/70" : "text-slate-400 dark:text-slate-500"}`}
+                                    >
+                                        <span>
+                                            {budget.type === "ahorro"
+                                                ? "Meta"
+                                                : "Inicial"}
+                                            :{" "}
+                                            {formatMoney(budget.initial_amount)}
+                                        </span>
+                                        <span>
+                                            {budget.type === "ahorro"
+                                                ? `${Math.min(100, Math.round(pct))}%`
+                                                : `${budget.sub_accounts.length} subcuentas`}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         );
@@ -1380,7 +1386,7 @@ export default function Dashboard({
                             ) : (
                                 <div
                                     ref={subTrackRef}
-                                    className="flex gap-4 overflow-x-auto pb-3 items-center"
+                                    className="flex gap-4 overflow-x-auto py-6 items-center"
                                     style={{
                                         scrollSnapType: "x mandatory",
                                         scrollbarWidth: "none",
@@ -1407,7 +1413,7 @@ export default function Dashboard({
                                                         ),
                                                         width: CARD_W,
                                                         minWidth: CARD_W,
-                                                        minHeight: 160,
+                                                        minHeight: 190,
                                                     }}
                                                 >
                                                     <div className="p-2.5 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-400 dark:text-slate-500 mb-2">
@@ -1468,7 +1474,7 @@ export default function Dashboard({
                                                 }
                                                 onMouseMove={handle3DMove}
                                                 onMouseLeave={handle3DLeave}
-                                                className={`cursor-pointer p-5 rounded-3xl border ${
+                                                className={`cursor-pointer p-6 rounded-3xl border flex flex-col justify-between ${
                                                     isSelected
                                                         ? "bg-slate-100 dark:bg-slate-700 border-slate-400 dark:border-slate-500"
                                                         : `bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700/50 ${bgHoverColor}`
@@ -1480,56 +1486,68 @@ export default function Dashboard({
                                                     ),
                                                     width: CARD_W,
                                                     minWidth: CARD_W,
+                                                    minHeight: 190,
                                                 }}
                                             >
-                                                <div className="flex items-center gap-4 mb-4">
+                                                <div className="flex items-center gap-4">
                                                     {getSubAccountIcon(
                                                         sub.name,
                                                     )}
                                                     <div className="flex-1 min-w-0">
-                                                        <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100 truncate">
+                                                        <h4 className="text-base font-bold text-slate-800 dark:text-slate-100 truncate">
                                                             {sub.name}
                                                         </h4>
                                                         <p
-                                                            className={`text-[10px] uppercase tracking-widest font-semibold mb-1 ${sub.type === "ahorro" ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}
+                                                            className={`text-xs uppercase tracking-widest font-semibold ${sub.type === "ahorro" ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}
                                                         >
                                                             {sub.type ===
                                                             "ahorro"
                                                                 ? "Ahorro"
                                                                 : "Gasto"}
                                                         </p>
-                                                        <p className="text-xs text-slate-400 dark:text-slate-500">
-                                                            Asignado:{" "}
-                                                            {formatMoney(
-                                                                sub.initial_amount,
-                                                            )}
-                                                        </p>
                                                     </div>
                                                 </div>
-                                                <div className="space-y-1">
+                                                <div className="space-y-2">
                                                     <div className="flex items-baseline justify-between">
-                                                        <span className="text-xs text-slate-400 dark:text-slate-500">
+                                                        <span className="text-sm text-slate-400 dark:text-slate-500">
                                                             Disponible
                                                         </span>
                                                         <span
-                                                            className={`text-base font-extrabold ${percentRemaining <= 20 ? "text-rose-600 dark:text-rose-400" : "text-slate-700 dark:text-slate-200"}`}
+                                                            className={`text-xl font-extrabold ${percentRemaining <= 20 ? "text-rose-600 dark:text-rose-400" : "text-slate-700 dark:text-slate-200"}`}
                                                         >
                                                             {formatMoney(
                                                                 sub.current_amount,
                                                             )}
                                                         </span>
                                                     </div>
+                                                    <div className="flex justify-between text-xs text-slate-400 dark:text-slate-500">
+                                                        <span>
+                                                            Asignado:{" "}
+                                                            {formatMoney(
+                                                                sub.initial_amount,
+                                                            )}
+                                                        </span>
+                                                        <span>
+                                                            {Math.max(
+                                                                0,
+                                                                Math.round(
+                                                                    percentRemaining,
+                                                                ),
+                                                            )}
+                                                            %
+                                                        </span>
+                                                    </div>
                                                     {percentRemaining <= 20 && (
-                                                        <p className="text-[10px] font-bold text-rose-500 mt-2">
+                                                        <p className="text-xs font-bold text-rose-500">
                                                             {percentRemaining <=
                                                             0
                                                                 ? "Límite alcanzado"
                                                                 : "Alerta: queda menos del 20%"}
                                                         </p>
                                                     )}
-                                                    <div className="w-full bg-slate-100 dark:bg-slate-900 rounded-full h-1.5">
+                                                    <div className="w-full bg-slate-100 dark:bg-slate-900 rounded-full h-2">
                                                         <div
-                                                            className={`h-1.5 rounded-full transition-all duration-300 ${progressColor}`}
+                                                            className={`h-2 rounded-full transition-all duration-300 ${progressColor}`}
                                                             style={{
                                                                 width: `${Math.max(0, Math.min(100, percentRemaining))}%`,
                                                             }}
