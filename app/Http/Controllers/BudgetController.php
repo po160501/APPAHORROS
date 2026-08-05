@@ -163,6 +163,17 @@ class BudgetController extends Controller
         return back()->with('success', 'Cuenta actualizada.');
     }
 
+    public function destroyBudget(Request $request, Budget $budget): RedirectResponse
+    {
+        abort_unless($budget->user_id === $request->user()->id, 403);
+
+        DB::transaction(function () use ($budget) {
+            $budget->delete();
+        });
+
+        return back()->with('success', 'Cuenta principal eliminada.');
+    }
+
     public function storeSubAccount(Request $request): RedirectResponse
     {
         $request->validate([

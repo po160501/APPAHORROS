@@ -16,6 +16,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [BudgetController::class, 'index'])->name('dashboard');
     Route::post('/budgets', [BudgetController::class, 'storeBudget'])->name('budgets.store');
     Route::put('/budgets/{budget}', [BudgetController::class, 'updateBudget'])->name('budgets.update');
+    Route::delete('/budgets/{budget}', [BudgetController::class, 'destroyBudget'])->name('budgets.destroy');
     Route::post('/income', [BudgetController::class, 'updateIncome'])->name('income.update');
     Route::post('/account-transfers', [BudgetController::class, 'storeAccountTransfer'])->name('account-transfers.store');
     Route::post('/sub-accounts', [BudgetController::class, 'storeSubAccount'])->name('sub-accounts.store');
