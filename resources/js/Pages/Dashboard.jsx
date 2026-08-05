@@ -19,6 +19,8 @@ export default function Dashboard({
     const [editingRecord, setEditingRecord] = useState(null);
     const [isBudgetEditOpen, setIsBudgetEditOpen] = useState(false);
     const [isSubAccountEditOpen, setIsSubAccountEditOpen] = useState(false);
+    const [isMainAccountsExpanded, setIsMainAccountsExpanded] = useState(false);
+    const [isSummaryExpanded, setIsSummaryExpanded] = useState(false);
     const [budgetEditData, setBudgetEditData] = useState({
         name: "",
         amount: "",
@@ -333,6 +335,18 @@ export default function Dashboard({
         }
     };
 
+    const handleDeleteBudget = (budgetId) => {
+        if (
+            confirm(
+                "¿Estás seguro de que deseas eliminar esta cuenta principal? Se eliminarán también sus subcuentas y registros.",
+            )
+        ) {
+            router.delete(route("budgets.destroy", budgetId), {
+                preserveScroll: true,
+            });
+        }
+    };
+
     useEffect(() => {
         incomeForm.setData({ month: selectedMonth, income: income || "" });
     }, [selectedMonth, income]);
@@ -594,166 +608,212 @@ export default function Dashboard({
 
             <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto space-y-8">
                 <section className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/50 rounded-3xl shadow-sm p-5 sm:p-6 space-y-5">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div className="flex items-start justify-between gap-4">
                         <div>
                             <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">
                                 Resumen de {formatMonthSpanish(selectedMonth)}
                             </h3>
                         </div>
-                        <form
-                            onSubmit={handleIncomeSubmit}
-                            className="flex gap-2 items-end"
+                        <button
+                            type="button"
+                            onClick={() =>
+                                setIsSummaryExpanded((expanded) => !expanded)
+                            }
+                            aria-expanded={isSummaryExpanded}
+                            className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 dark:bg-slate-900 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 transition"
                         >
-                            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                                Ingreso del mes
-                                <input
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    value={incomeForm.data.income}
-                                    onChange={(e) =>
-                                        incomeForm.setData(
-                                            "income",
-                                            e.target.value,
-                                        )
-                                    }
-                                    className="mt-1 block w-36 px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100"
-                                    placeholder="$ 0.00"
+                            <svg
+                                className={`w-4 h-4 transition-transform duration-200 ${
+                                    isSummaryExpanded
+                                        ? "rotate-180"
+                                        : "rotate-0"
+                                }`}
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="2"
+                                    d="M19 9l-7 7-7-7"
                                 />
-                            </label>
-                            <button
-                                type="submit"
-                                disabled={incomeForm.processing}
-                                className="px-3 py-2 bg-slate-800 dark:bg-slate-700 text-white rounded-xl text-xs font-bold"
-                            >
-                                Guardar
-                            </button>
-                        </form>
+                            </svg>
+                        </button>
                     </div>
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                        <div className="rounded-2xl bg-rose-50 dark:bg-rose-950/30 p-4">
-                            <p className="text-[10px] uppercase font-bold text-rose-500">
-                                Gastado
-                            </p>
-                            <p className="text-xl font-extrabold text-rose-700 dark:text-rose-300">
-                                {formatMoney(monthlyExpenses)}
-                            </p>
-                            <p className="text-[10px] text-rose-500">
-                                {income > 0
-                                    ? `${spendingPctOfIncome.toFixed(1)}% del ingreso`
-                                    : "Añade tu ingreso"}
-                            </p>
-                        </div>
-                        <div className="rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 p-4">
-                            <p className="text-[10px] uppercase font-bold text-emerald-500">
-                                Ahorrado
-                            </p>
-                            <p className="text-xl font-extrabold text-emerald-700 dark:text-emerald-300">
-                                {formatMoney(monthlySavings)}
-                            </p>
-                            <p className="text-[10px] text-emerald-500">
-                                {income > 0
-                                    ? `${savingPctOfIncome.toFixed(1)}% del ingreso`
-                                    : "Depósitos del mes"}
-                            </p>
-                        </div>
-                        <div className="rounded-2xl bg-slate-50 dark:bg-slate-900/50 p-4">
-                            <p className="text-[10px] uppercase font-bold text-slate-400">
-                                Ingreso
-                            </p>
-                            <p className="text-xl font-extrabold text-slate-700 dark:text-slate-200">
-                                {formatMoney(income)}
-                            </p>
-                            <p className="text-[10px] text-slate-400">
-                                Disponible:{" "}
-                                {formatMoney(
-                                    income - monthlyExpenses - monthlySavings,
-                                )}
-                            </p>
-                        </div>
-                        <div className="rounded-2xl bg-violet-50 dark:bg-violet-950/30 p-4">
-                            <p className="text-[10px] uppercase font-bold text-violet-500">
-                                Mayor categoría
-                            </p>
-                            <p className="text-lg font-extrabold text-violet-700 dark:text-violet-300 truncate">
-                                {categoryTotals[0]?.name || "Sin gastos"}
-                            </p>
-                            <p className="text-[10px] text-violet-500">
-                                {categoryTotals[0]
-                                    ? `${((categoryTotals[0].amount / monthlyExpenses) * 100).toFixed(0)}% de gastos`
-                                    : ""}
-                            </p>
-                        </div>
-                    </div>
-                    {categoryTotals.length > 0 && (
-                        <div className="grid md:grid-cols-[140px_1fr] gap-5 items-center">
-                            <div
-                                className="mx-auto w-28 h-28 rounded-full flex items-center justify-center"
-                                style={{
-                                    background: `conic-gradient(#10b981 0 ${Math.min(100, (categoryTotals[0].amount / monthlyExpenses) * 100)}%, #e2e8f0 0 100%)`,
-                                }}
+                    {isSummaryExpanded && (
+                        <>
+                            <form
+                                onSubmit={handleIncomeSubmit}
+                                className="flex gap-2 items-end"
                             >
-                                <div className="w-20 h-20 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center text-center text-[10px] font-bold text-slate-500">
-                                    Gastos
+                                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                                    Ingreso del mes
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        value={incomeForm.data.income}
+                                        onChange={(e) =>
+                                            incomeForm.setData(
+                                                "income",
+                                                e.target.value,
+                                            )
+                                        }
+                                        className="mt-1 block w-36 px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100"
+                                        placeholder="$ 0.00"
+                                    />
+                                </label>
+                                <button
+                                    type="submit"
+                                    disabled={incomeForm.processing}
+                                    className="px-3 py-2 bg-slate-800 dark:bg-slate-700 text-white rounded-xl text-xs font-bold"
+                                >
+                                    Guardar
+                                </button>
+                            </form>
+                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                                <div className="rounded-2xl bg-rose-50 dark:bg-rose-950/30 p-4">
+                                    <p className="text-[10px] uppercase font-bold text-rose-500">
+                                        Gastado
+                                    </p>
+                                    <p className="text-xl font-extrabold text-rose-700 dark:text-rose-300">
+                                        {formatMoney(monthlyExpenses)}
+                                    </p>
+                                    <p className="text-[10px] text-rose-500">
+                                        {income > 0
+                                            ? `${spendingPctOfIncome.toFixed(1)}% del ingreso`
+                                            : "Añade tu ingreso"}
+                                    </p>
+                                </div>
+                                <div className="rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 p-4">
+                                    <p className="text-[10px] uppercase font-bold text-emerald-500">
+                                        Ahorrado
+                                    </p>
+                                    <p className="text-xl font-extrabold text-emerald-700 dark:text-emerald-300">
+                                        {formatMoney(monthlySavings)}
+                                    </p>
+                                    <p className="text-[10px] text-emerald-500">
+                                        {income > 0
+                                            ? `${savingPctOfIncome.toFixed(1)}% del ingreso`
+                                            : "Depósitos del mes"}
+                                    </p>
+                                </div>
+                                <div className="rounded-2xl bg-slate-50 dark:bg-slate-900/50 p-4">
+                                    <p className="text-[10px] uppercase font-bold text-slate-400">
+                                        Ingreso
+                                    </p>
+                                    <p className="text-xl font-extrabold text-slate-700 dark:text-slate-200">
+                                        {formatMoney(income)}
+                                    </p>
+                                    <p className="text-[10px] text-slate-400">
+                                        Disponible:{" "}
+                                        {formatMoney(
+                                            income -
+                                                monthlyExpenses -
+                                                monthlySavings,
+                                        )}
+                                    </p>
+                                </div>
+                                <div className="rounded-2xl bg-violet-50 dark:bg-violet-950/30 p-4">
+                                    <p className="text-[10px] uppercase font-bold text-violet-500">
+                                        Mayor categoría
+                                    </p>
+                                    <p className="text-lg font-extrabold text-violet-700 dark:text-violet-300 truncate">
+                                        {categoryTotals[0]?.name ||
+                                            "Sin gastos"}
+                                    </p>
+                                    <p className="text-[10px] text-violet-500">
+                                        {categoryTotals[0]
+                                            ? `${((categoryTotals[0].amount / monthlyExpenses) * 100).toFixed(0)}% de gastos`
+                                            : ""}
+                                    </p>
                                 </div>
                             </div>
-                            <div className="space-y-3">
-                                {categoryTotals.slice(0, 5).map((category) => {
-                                    const percent =
-                                        (category.amount / monthlyExpenses) *
-                                        100;
-                                    const previous =
-                                        previousCategories[category.name] || 0;
-                                    const difference =
-                                        category.amount - previous;
-                                    return (
-                                        <div key={category.name}>
-                                            <div className="flex justify-between text-xs mb-1">
-                                                <span className="font-semibold text-slate-700 dark:text-slate-200">
-                                                    {category.name}
-                                                </span>
-                                                <span className="text-slate-500">
-                                                    {formatMoney(
-                                                        category.amount,
-                                                    )}{" "}
-                                                    · {percent.toFixed(0)}%{" "}
-                                                    {previous > 0 && (
-                                                        <em
-                                                            className={
-                                                                difference > 0
-                                                                    ? "text-rose-500 not-italic"
-                                                                    : "text-emerald-500 not-italic"
-                                                            }
-                                                        >
-                                                            (
-                                                            {difference > 0
-                                                                ? "+"
-                                                                : ""}
-                                                            {formatMoney(
-                                                                difference,
-                                                            )}{" "}
-                                                            vs. mes anterior)
-                                                        </em>
-                                                    )}
-                                                </span>
-                                            </div>
-                                            <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-700">
-                                                <div
-                                                    className="h-2 rounded-full bg-emerald-500"
-                                                    style={{
-                                                        width: `${percent}%`,
-                                                    }}
-                                                />
-                                            </div>
+                            {categoryTotals.length > 0 && (
+                                <div className="grid md:grid-cols-[140px_1fr] gap-5 items-center">
+                                    <div
+                                        className="mx-auto w-28 h-28 rounded-full flex items-center justify-center"
+                                        style={{
+                                            background: `conic-gradient(#10b981 0 ${Math.min(100, (categoryTotals[0].amount / monthlyExpenses) * 100)}%, #e2e8f0 0 100%)`,
+                                        }}
+                                    >
+                                        <div className="w-20 h-20 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center text-center text-[10px] font-bold text-slate-500">
+                                            Gastos
                                         </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
+                                    </div>
+                                    <div className="space-y-3">
+                                        {categoryTotals
+                                            .slice(0, 5)
+                                            .map((category) => {
+                                                const percent =
+                                                    (category.amount /
+                                                        monthlyExpenses) *
+                                                    100;
+                                                const previous =
+                                                    previousCategories[
+                                                        category.name
+                                                    ] || 0;
+                                                const difference =
+                                                    category.amount - previous;
+                                                return (
+                                                    <div key={category.name}>
+                                                        <div className="flex justify-between text-xs mb-1">
+                                                            <span className="font-semibold text-slate-700 dark:text-slate-200">
+                                                                {category.name}
+                                                            </span>
+                                                            <span className="text-slate-500">
+                                                                {formatMoney(
+                                                                    category.amount,
+                                                                )}{" "}
+                                                                ·{" "}
+                                                                {percent.toFixed(
+                                                                    0,
+                                                                )}
+                                                                %{" "}
+                                                                {previous >
+                                                                    0 && (
+                                                                    <em
+                                                                        className={
+                                                                            difference >
+                                                                            0
+                                                                                ? "text-rose-500 not-italic"
+                                                                                : "text-emerald-500 not-italic"
+                                                                        }
+                                                                    >
+                                                                        (
+                                                                        {difference >
+                                                                        0
+                                                                            ? "+"
+                                                                            : ""}
+                                                                        {formatMoney(
+                                                                            difference,
+                                                                        )}{" "}
+                                                                        vs. mes
+                                                                        anterior)
+                                                                    </em>
+                                                                )}
+                                                            </span>
+                                                        </div>
+                                                        <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-700">
+                                                            <div
+                                                                className="h-2 rounded-full bg-emerald-500"
+                                                                style={{
+                                                                    width: `${percent}%`,
+                                                                }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                    </div>
+                                </div>
+                            )}
+                        </>
                     )}
                 </section>
                 <section className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/50 rounded-3xl shadow-sm p-5 sm:p-6 space-y-5">
-                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                    <div className="flex items-start justify-between gap-4">
                         <div>
                             <p className="text-xs uppercase tracking-wider font-semibold text-slate-400 dark:text-slate-500">
                                 Total en cuentas principales
@@ -762,156 +822,200 @@ export default function Dashboard({
                                 {formatMoney(totalAvailableAmount)}
                             </h3>
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full lg:w-auto">
-                            {accountBalances.map((account) => (
-                                <div
-                                    key={account.id}
-                                    className="rounded-3xl bg-slate-50 dark:bg-slate-900/40 p-4 border border-slate-100 dark:border-slate-700"
-                                >
-                                    <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400">
-                                        {account.name}
-                                    </p>
-                                    <p className="text-xl font-bold text-slate-800 dark:text-slate-100">
-                                        {formatMoney(account.available_amount)}
-                                    </p>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                    {budgets.length >= 2 ? (
-                        <form
-                            onSubmit={handleTransferSubmit}
-                            className="grid gap-4 sm:grid-cols-[1fr_1fr] items-end"
+                        <button
+                            type="button"
+                            onClick={() =>
+                                setIsMainAccountsExpanded(
+                                    (expanded) => !expanded,
+                                )
+                            }
+                            aria-expanded={isMainAccountsExpanded}
+                            className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 dark:bg-slate-900 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 transition"
                         >
-                            <div className="grid gap-4 sm:col-span-2 lg:grid-cols-[1fr_1fr_1fr]">
-                                <div>
-                                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
-                                        Desde
-                                    </label>
-                                    <select
-                                        value={transferForm.data.from_budget_id}
-                                        onChange={(e) =>
-                                            transferForm.setData(
-                                                "from_budget_id",
-                                                e.target.value,
-                                            )
-                                        }
-                                        className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-800 dark:text-slate-100"
+                            <svg
+                                className={`w-4 h-4 transition-transform duration-200 ${
+                                    isMainAccountsExpanded
+                                        ? "rotate-180"
+                                        : "rotate-0"
+                                }`}
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="2"
+                                    d="M19 9l-7 7-7-7"
+                                />
+                            </svg>
+                        </button>
+                    </div>
+                    {isMainAccountsExpanded && (
+                        <>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full lg:w-auto">
+                                {accountBalances.map((account) => (
+                                    <div
+                                        key={account.id}
+                                        className="rounded-3xl bg-slate-50 dark:bg-slate-900/40 p-4 border border-slate-100 dark:border-slate-700"
                                     >
-                                        {budgets.map((budget) => (
-                                            <option
-                                                key={budget.id}
-                                                value={budget.id}
-                                            >
-                                                {budget.name} -{" "}
-                                                {formatMoney(
-                                                    budget.available_amount,
-                                                )}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
-                                        Hacia
-                                    </label>
-                                    <select
-                                        value={transferForm.data.to_budget_id}
-                                        onChange={(e) =>
-                                            transferForm.setData(
-                                                "to_budget_id",
-                                                e.target.value,
-                                            )
-                                        }
-                                        className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-800 dark:text-slate-100"
-                                    >
-                                        {budgets.map((budget) => (
-                                            <option
-                                                key={budget.id}
-                                                value={budget.id}
-                                            >
-                                                {budget.name} -{" "}
-                                                {formatMoney(
-                                                    budget.available_amount,
-                                                )}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
-                                        Monto
-                                    </label>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        min="0.01"
-                                        value={transferForm.data.amount}
-                                        onChange={(e) =>
-                                            transferForm.setData(
-                                                "amount",
-                                                e.target.value,
-                                            )
-                                        }
-                                        className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-800 dark:text-slate-100"
-                                        placeholder="0.00"
-                                        required
-                                    />
-                                </div>
+                                        <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400">
+                                            {account.name}
+                                        </p>
+                                        <p className="text-xl font-bold text-slate-800 dark:text-slate-100">
+                                            {formatMoney(
+                                                account.available_amount,
+                                            )}
+                                        </p>
+                                    </div>
+                                ))}
                             </div>
-                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-[1fr_2fr]">
-                                <div>
-                                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
-                                        Fecha
-                                    </label>
-                                    <input
-                                        type="datetime-local"
-                                        value={transferForm.data.date}
-                                        onChange={(e) =>
-                                            transferForm.setData(
-                                                "date",
-                                                e.target.value,
-                                            )
-                                        }
-                                        className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-800 dark:text-slate-100"
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
-                                        Nota
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={transferForm.data.comment}
-                                        onChange={(e) =>
-                                            transferForm.setData(
-                                                "comment",
-                                                e.target.value,
-                                            )
-                                        }
-                                        className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-800 dark:text-slate-100"
-                                        placeholder="Opcional"
-                                    />
-                                </div>
-                                <button
-                                    type="submit"
-                                    disabled={
-                                        transferForm.processing ||
-                                        transferForm.data.from_budget_id ===
-                                            transferForm.data.to_budget_id
-                                    }
-                                    className="w-full rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-4 py-3"
+                            {budgets.length >= 2 ? (
+                                <form
+                                    onSubmit={handleTransferSubmit}
+                                    className="grid gap-4 sm:grid-cols-[1fr_1fr] items-end"
                                 >
-                                    Transferir
-                                </button>
-                            </div>
-                        </form>
-                    ) : (
-                        <div className="rounded-3xl bg-slate-50 dark:bg-slate-900/40 p-4 border border-slate-100 dark:border-slate-700 text-sm text-slate-500">
-                            Necesitas al menos dos cuentas principales para
-                            transferir dinero.
-                        </div>
+                                    <div className="grid gap-4 sm:col-span-2 lg:grid-cols-[1fr_1fr_1fr]">
+                                        <div>
+                                            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+                                                Desde
+                                            </label>
+                                            <select
+                                                value={
+                                                    transferForm.data
+                                                        .from_budget_id
+                                                }
+                                                onChange={(e) =>
+                                                    transferForm.setData(
+                                                        "from_budget_id",
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-800 dark:text-slate-100"
+                                            >
+                                                {budgets.map((budget) => (
+                                                    <option
+                                                        key={budget.id}
+                                                        value={budget.id}
+                                                    >
+                                                        {budget.name} -{" "}
+                                                        {formatMoney(
+                                                            budget.available_amount,
+                                                        )}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+                                                Hacia
+                                            </label>
+                                            <select
+                                                value={
+                                                    transferForm.data
+                                                        .to_budget_id
+                                                }
+                                                onChange={(e) =>
+                                                    transferForm.setData(
+                                                        "to_budget_id",
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-800 dark:text-slate-100"
+                                            >
+                                                {budgets.map((budget) => (
+                                                    <option
+                                                        key={budget.id}
+                                                        value={budget.id}
+                                                    >
+                                                        {budget.name} -{" "}
+                                                        {formatMoney(
+                                                            budget.available_amount,
+                                                        )}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+                                                Monto
+                                            </label>
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                min="0.01"
+                                                value={transferForm.data.amount}
+                                                onChange={(e) =>
+                                                    transferForm.setData(
+                                                        "amount",
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-800 dark:text-slate-100"
+                                                placeholder="0.00"
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-[1fr_2fr]">
+                                        <div>
+                                            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+                                                Fecha
+                                            </label>
+                                            <input
+                                                type="datetime-local"
+                                                value={transferForm.data.date}
+                                                onChange={(e) =>
+                                                    transferForm.setData(
+                                                        "date",
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-800 dark:text-slate-100"
+                                                required
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+                                                Nota
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={
+                                                    transferForm.data.comment
+                                                }
+                                                onChange={(e) =>
+                                                    transferForm.setData(
+                                                        "comment",
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-800 dark:text-slate-100"
+                                                placeholder="Opcional"
+                                            />
+                                        </div>
+                                        <button
+                                            type="submit"
+                                            disabled={
+                                                transferForm.processing ||
+                                                transferForm.data
+                                                    .from_budget_id ===
+                                                    transferForm.data
+                                                        .to_budget_id
+                                            }
+                                            className="w-full rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-4 py-3"
+                                        >
+                                            Transferir
+                                        </button>
+                                    </div>
+                                </form>
+                            ) : (
+                                <div className="rounded-3xl bg-slate-50 dark:bg-slate-900/40 p-4 border border-slate-100 dark:border-slate-700 text-sm text-slate-500">
+                                    Necesitas al menos dos cuentas principales
+                                    para transferir dinero.
+                                </div>
+                            )}
+                        </>
                     )}
                 </section>
                 {/* TARJETA PRINCIPAL */}
@@ -1023,8 +1127,30 @@ export default function Dashboard({
                                         }}
                                     />
                                 )}
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDeleteBudget(budget.id);
+                                    }}
+                                    title="Eliminar cuenta"
+                                    className="absolute top-2 right-4 z-20 text-slate-400 hover:text-rose-500 p-1 rounded-full bg-white/60 dark:bg-slate-800/60"
+                                >
+                                    <svg
+                                        className="w-4 h-4"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth="2"
+                                            d="M6 18L18 6M6 6l12 12"
+                                        />
+                                    </svg>
+                                </button>
                                 <span
-                                    className={`absolute top-4 right-4 z-10 px-2.5 py-1 rounded-full text-[10px] font-extrabold tracking-wider ${
+                                    className={`absolute top-10 right-4 z-10 px-2.5 py-1 rounded-full text-[10px] font-extrabold tracking-wider ${
                                         budget.type === "ahorro"
                                             ? isSelected
                                                 ? "bg-emerald-400/25 text-emerald-100 border border-emerald-200/40"
