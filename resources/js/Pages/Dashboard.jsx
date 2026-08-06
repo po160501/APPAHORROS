@@ -139,9 +139,9 @@ export default function Dashboard({
     }, [budgets]);
 
     const formatMoney = (amount) =>
-        new Intl.NumberFormat("es-MX", {
+        new Intl.NumberFormat("es-PE", {
             style: "currency",
-            currency: "MXN",
+            currency: "PEN",
         }).format(amount);
 
     const formatDate = (dateStr) =>
@@ -652,7 +652,7 @@ export default function Dashboard({
                             Guardar
                         </button>
                     </form>
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-1 gap-3">
                         <StatCard
                             color="rose"
                             label="Gastado"
