@@ -3,15 +3,7 @@ import NavLink from '@/Components/NavLink';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
 import { Link, usePage } from '@inertiajs/react';
 import { useState } from 'react';
-
-// Custom wallet icon for branding
-function WalletIcon({ className }) {
-    return (
-        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-        </svg>
-    );
-}
+import { WalletIcon, Bars3Icon, XMarkIcon, ChevronDownIcon, HomeIcon, UserCircleIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
 
 export default function AuthenticatedLayout({ header, children }) {
     const user = usePage().props.auth.user;
@@ -40,6 +32,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                     href={route('dashboard')}
                                     active={route().current('dashboard')}
                                 >
+                                    <HomeIcon className="w-4 h-4 mr-1.5 inline-block" />
                                     Inicio
                                 </NavLink>
                             </div>
@@ -59,18 +52,18 @@ export default function AuthenticatedLayout({ header, children }) {
                                                     {user.name.charAt(0).toUpperCase()}
                                                 </div>
                                                 {user.name}
-                                                <svg className="h-4 w-4 text-slate-400" viewBox="0 0 20 20" fill="currentColor">
-                                                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                                                </svg>
+                                                <ChevronDownIcon className="h-4 w-4 text-slate-400" />
                                             </button>
                                         </span>
                                     </Dropdown.Trigger>
 
                                     <Dropdown.Content>
                                         <Dropdown.Link href={route('profile.edit')}>
+                                            <UserCircleIcon className="w-4 h-4 inline-block mr-1.5" />
                                             Mi Perfil
                                         </Dropdown.Link>
                                         <Dropdown.Link href={route('logout')} method="post" as="button">
+                                            <ArrowRightOnRectangleIcon className="w-4 h-4 inline-block mr-1.5" />
                                             Cerrar Sesión
                                         </Dropdown.Link>
                                     </Dropdown.Content>
@@ -84,18 +77,9 @@ export default function AuthenticatedLayout({ header, children }) {
                                 onClick={() => setShowingNavigationDropdown((p) => !p)}
                                 className="inline-flex items-center justify-center rounded-xl p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus:outline-none"
                             >
-                                <svg className="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                                    <path
-                                        className={!showingNavigationDropdown ? 'inline-flex' : 'hidden'}
-                                        strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
-                                        d="M4 6h16M4 12h16M4 18h16"
-                                    />
-                                    <path
-                                        className={showingNavigationDropdown ? 'inline-flex' : 'hidden'}
-                                        strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
-                                        d="M6 18L18 6M6 6l12 12"
-                                    />
-                                </svg>
+                                {showingNavigationDropdown
+                                    ? <XMarkIcon className="h-6 w-6" />
+                                    : <Bars3Icon className="h-6 w-6" />}
                             </button>
                         </div>
                     </div>
@@ -120,9 +104,11 @@ export default function AuthenticatedLayout({ header, children }) {
                         </div>
                         <div className="space-y-1">
                             <ResponsiveNavLink href={route('profile.edit')}>
+                                <UserCircleIcon className="w-4 h-4 inline-block mr-1.5" />
                                 Mi Perfil
                             </ResponsiveNavLink>
                             <ResponsiveNavLink method="post" href={route('logout')} as="button">
+                                <ArrowRightOnRectangleIcon className="w-4 h-4 inline-block mr-1.5" />
                                 Cerrar Sesión
                             </ResponsiveNavLink>
                         </div>

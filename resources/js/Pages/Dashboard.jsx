@@ -1,4 +1,10 @@
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
+import BudgetCard from "@/Components/Dashboard/BudgetCard";
+import DashboardModal from "@/Components/Dashboard/DashboardModal";
+import ExpenseRow from "@/Components/Dashboard/ExpenseRow";
+import SectionPanel from "@/Components/Dashboard/SectionPanel";
+import StatCard from "@/Components/Dashboard/StatCard";
+import SubAccountCard from "@/Components/Dashboard/SubAccountCard";
 import { Head, useForm, router, usePage } from "@inertiajs/react";
 import { useState, useEffect, useRef } from "react";
 
@@ -607,266 +613,294 @@ export default function Dashboard({
             <Head title="Control de Ahorros" />
 
             <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto space-y-8">
-                <section className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/50 rounded-3xl shadow-sm p-5 sm:p-6 space-y-5">
-                    <div className="flex items-start justify-between gap-4">
+                <SectionPanel
+                    header={
                         <div>
                             <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">
                                 Resumen de {formatMonthSpanish(selectedMonth)}
                             </h3>
                         </div>
+                    }
+                    expanded={isSummaryExpanded}
+                    onToggle={() =>
+                        setIsSummaryExpanded((expanded) => !expanded)
+                    }
+                >
+                    <form
+                        onSubmit={handleIncomeSubmit}
+                        className="flex gap-2 items-end"
+                    >
+                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                            Ingreso del mes
+                            <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={incomeForm.data.income}
+                                onChange={(e) =>
+                                    incomeForm.setData("income", e.target.value)
+                                }
+                                className="mt-1 block w-36 px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100"
+                                placeholder="$ 0.00"
+                            />
+                        </label>
                         <button
-                            type="button"
-                            onClick={() =>
-                                setIsSummaryExpanded((expanded) => !expanded)
-                            }
-                            aria-expanded={isSummaryExpanded}
-                            className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 dark:bg-slate-900 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 transition"
+                            type="submit"
+                            disabled={incomeForm.processing}
+                            className="px-3 py-2 bg-slate-800 dark:bg-slate-700 text-white rounded-xl text-xs font-bold"
                         >
-                            <svg
-                                className={`w-4 h-4 transition-transform duration-200 ${
-                                    isSummaryExpanded
-                                        ? "rotate-180"
-                                        : "rotate-0"
-                                }`}
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth="2"
-                                    d="M19 9l-7 7-7-7"
-                                />
-                            </svg>
+                            Guardar
                         </button>
-                    </div>
-                    {isSummaryExpanded && (
-                        <>
-                            <form
-                                onSubmit={handleIncomeSubmit}
-                                className="flex gap-2 items-end"
-                            >
-                                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                                    Ingreso del mes
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        step="0.01"
-                                        value={incomeForm.data.income}
-                                        onChange={(e) =>
-                                            incomeForm.setData(
-                                                "income",
-                                                e.target.value,
-                                            )
-                                        }
-                                        className="mt-1 block w-36 px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100"
-                                        placeholder="$ 0.00"
-                                    />
-                                </label>
-                                <button
-                                    type="submit"
-                                    disabled={incomeForm.processing}
-                                    className="px-3 py-2 bg-slate-800 dark:bg-slate-700 text-white rounded-xl text-xs font-bold"
+                    </form>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                        <StatCard
+                            color="rose"
+                            label="Gastado"
+                            value={formatMoney(monthlyExpenses)}
+                            sub={
+                                income > 0
+                                    ? `${spendingPctOfIncome.toFixed(1)}% del ingreso`
+                                    : "Añade tu ingreso"
+                            }
+                            icon={
+                                <svg
+                                    className="w-4 h-4"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
                                 >
-                                    Guardar
-                                </button>
-                            </form>
-                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                                <div className="rounded-2xl bg-rose-50 dark:bg-rose-950/30 p-4">
-                                    <p className="text-[10px] uppercase font-bold text-rose-500">
-                                        Gastado
-                                    </p>
-                                    <p className="text-xl font-extrabold text-rose-700 dark:text-rose-300">
-                                        {formatMoney(monthlyExpenses)}
-                                    </p>
-                                    <p className="text-[10px] text-rose-500">
-                                        {income > 0
-                                            ? `${spendingPctOfIncome.toFixed(1)}% del ingreso`
-                                            : "Añade tu ingreso"}
-                                    </p>
-                                </div>
-                                <div className="rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 p-4">
-                                    <p className="text-[10px] uppercase font-bold text-emerald-500">
-                                        Ahorrado
-                                    </p>
-                                    <p className="text-xl font-extrabold text-emerald-700 dark:text-emerald-300">
-                                        {formatMoney(monthlySavings)}
-                                    </p>
-                                    <p className="text-[10px] text-emerald-500">
-                                        {income > 0
-                                            ? `${savingPctOfIncome.toFixed(1)}% del ingreso`
-                                            : "Depósitos del mes"}
-                                    </p>
-                                </div>
-                                <div className="rounded-2xl bg-slate-50 dark:bg-slate-900/50 p-4">
-                                    <p className="text-[10px] uppercase font-bold text-slate-400">
-                                        Ingreso
-                                    </p>
-                                    <p className="text-xl font-extrabold text-slate-700 dark:text-slate-200">
-                                        {formatMoney(income)}
-                                    </p>
-                                    <p className="text-[10px] text-slate-400">
-                                        Disponible:{" "}
-                                        {formatMoney(
-                                            income -
-                                                monthlyExpenses -
-                                                monthlySavings,
-                                        )}
-                                    </p>
-                                </div>
-                                <div className="rounded-2xl bg-violet-50 dark:bg-violet-950/30 p-4">
-                                    <p className="text-[10px] uppercase font-bold text-violet-500">
-                                        Mayor categoría
-                                    </p>
-                                    <p className="text-lg font-extrabold text-violet-700 dark:text-violet-300 truncate">
-                                        {categoryTotals[0]?.name ||
-                                            "Sin gastos"}
-                                    </p>
-                                    <p className="text-[10px] text-violet-500">
-                                        {categoryTotals[0]
-                                            ? `${((categoryTotals[0].amount / monthlyExpenses) * 100).toFixed(0)}% de gastos`
-                                            : ""}
-                                    </p>
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth="2"
+                                        d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"
+                                    />
+                                </svg>
+                            }
+                        />
+                        <StatCard
+                            color="emerald"
+                            label="Ahorrado"
+                            value={formatMoney(monthlySavings)}
+                            sub={
+                                income > 0
+                                    ? `${savingPctOfIncome.toFixed(1)}% del ingreso`
+                                    : "Depósitos del mes"
+                            }
+                            icon={
+                                <svg
+                                    className="w-4 h-4"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth="2"
+                                        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                    />
+                                </svg>
+                            }
+                        />
+                        <StatCard
+                            color="slate"
+                            label="Ingreso"
+                            value={formatMoney(income)}
+                            sub={`Disponible: ${formatMoney(income - monthlyExpenses - monthlySavings)}`}
+                            icon={
+                                <svg
+                                    className="w-4 h-4"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth="2"
+                                        d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+                                    />
+                                </svg>
+                            }
+                        />
+                        <StatCard
+                            color="violet"
+                            label="Mayor categoría"
+                            value={categoryTotals[0]?.name || "Sin gastos"}
+                            sub={
+                                categoryTotals[0]
+                                    ? `${((categoryTotals[0].amount / monthlyExpenses) * 100).toFixed(0)}% de gastos`
+                                    : ""
+                            }
+                            icon={
+                                <svg
+                                    className="w-4 h-4"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth="2"
+                                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                                    />
+                                </svg>
+                            }
+                        />
+                    </div>
+                    {categoryTotals.length > 0 && (
+                        <div className="grid md:grid-cols-[140px_1fr] gap-5 items-center">
+                            <div
+                                className="mx-auto w-28 h-28 rounded-full flex items-center justify-center"
+                                style={{
+                                    background: `conic-gradient(#10b981 0 ${Math.min(100, (categoryTotals[0].amount / monthlyExpenses) * 100)}%, #e2e8f0 0 100%)`,
+                                }}
+                            >
+                                <div className="w-20 h-20 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center text-center text-[10px] font-bold text-slate-500">
+                                    Gastos
                                 </div>
                             </div>
-                            {categoryTotals.length > 0 && (
-                                <div className="grid md:grid-cols-[140px_1fr] gap-5 items-center">
-                                    <div
-                                        className="mx-auto w-28 h-28 rounded-full flex items-center justify-center"
-                                        style={{
-                                            background: `conic-gradient(#10b981 0 ${Math.min(100, (categoryTotals[0].amount / monthlyExpenses) * 100)}%, #e2e8f0 0 100%)`,
-                                        }}
-                                    >
-                                        <div className="w-20 h-20 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center text-center text-[10px] font-bold text-slate-500">
-                                            Gastos
+                            <div className="space-y-3">
+                                {categoryTotals.slice(0, 5).map((category) => {
+                                    const percent =
+                                        (category.amount / monthlyExpenses) *
+                                        100;
+                                    const previous =
+                                        previousCategories[category.name] || 0;
+                                    const difference =
+                                        category.amount - previous;
+                                    return (
+                                        <div key={category.name}>
+                                            <div className="flex justify-between text-xs mb-1">
+                                                <span className="font-semibold text-slate-700 dark:text-slate-200">
+                                                    {category.name}
+                                                </span>
+                                                <span className="text-slate-500">
+                                                    {formatMoney(
+                                                        category.amount,
+                                                    )}{" "}
+                                                    · {percent.toFixed(0)}%
+                                                    {previous > 0 && (
+                                                        <em
+                                                            className={
+                                                                difference > 0
+                                                                    ? "text-rose-500 not-italic"
+                                                                    : "text-emerald-500 not-italic"
+                                                            }
+                                                        >
+                                                            (
+                                                            {difference > 0
+                                                                ? "+"
+                                                                : ""}
+                                                            {formatMoney(
+                                                                difference,
+                                                            )}{" "}
+                                                            vs. mes anterior)
+                                                        </em>
+                                                    )}
+                                                </span>
+                                            </div>
+                                            <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-700">
+                                                <div
+                                                    className="h-2 rounded-full bg-emerald-500"
+                                                    style={{
+                                                        width: `${percent}%`,
+                                                    }}
+                                                />
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div className="space-y-3">
-                                        {categoryTotals
-                                            .slice(0, 5)
-                                            .map((category) => {
-                                                const percent =
-                                                    (category.amount /
-                                                        monthlyExpenses) *
-                                                    100;
-                                                const previous =
-                                                    previousCategories[
-                                                        category.name
-                                                    ] || 0;
-                                                const difference =
-                                                    category.amount - previous;
-                                                return (
-                                                    <div key={category.name}>
-                                                        <div className="flex justify-between text-xs mb-1">
-                                                            <span className="font-semibold text-slate-700 dark:text-slate-200">
-                                                                {category.name}
-                                                            </span>
-                                                            <span className="text-slate-500">
-                                                                {formatMoney(
-                                                                    category.amount,
-                                                                )}{" "}
-                                                                ·{" "}
-                                                                {percent.toFixed(
-                                                                    0,
-                                                                )}
-                                                                %{" "}
-                                                                {previous >
-                                                                    0 && (
-                                                                    <em
-                                                                        className={
-                                                                            difference >
-                                                                            0
-                                                                                ? "text-rose-500 not-italic"
-                                                                                : "text-emerald-500 not-italic"
-                                                                        }
-                                                                    >
-                                                                        (
-                                                                        {difference >
-                                                                        0
-                                                                            ? "+"
-                                                                            : ""}
-                                                                        {formatMoney(
-                                                                            difference,
-                                                                        )}{" "}
-                                                                        vs. mes
-                                                                        anterior)
-                                                                    </em>
-                                                                )}
-                                                            </span>
-                                                        </div>
-                                                        <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-700">
-                                                            <div
-                                                                className="h-2 rounded-full bg-emerald-500"
-                                                                style={{
-                                                                    width: `${percent}%`,
-                                                                }}
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                    </div>
-                                </div>
-                            )}
-                        </>
-                    )}
-                </section>
-                <section className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/50 rounded-3xl shadow-sm p-5 sm:p-6 space-y-5">
-                    <div className="flex items-start justify-between gap-4">
-                        <div>
-                            <p className="text-xs uppercase tracking-wider font-semibold text-slate-400 dark:text-slate-500">
-                                Total en cuentas principales
-                            </p>
-                            <h3 className="text-2xl font-extrabold text-slate-900 dark:text-white">
-                                {formatMoney(totalAvailableAmount)}
-                            </h3>
+                                    );
+                                })}
+                            </div>
                         </div>
-                        <button
-                            type="button"
-                            onClick={() =>
-                                setIsMainAccountsExpanded(
-                                    (expanded) => !expanded,
-                                )
-                            }
-                            aria-expanded={isMainAccountsExpanded}
-                            className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 dark:bg-slate-900 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 transition"
-                        >
-                            <svg
-                                className={`w-4 h-4 transition-transform duration-200 ${
-                                    isMainAccountsExpanded
-                                        ? "rotate-180"
-                                        : "rotate-0"
-                                }`}
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth="2"
-                                    d="M19 9l-7 7-7-7"
-                                />
-                            </svg>
-                        </button>
-                    </div>
+                    )}
+                </SectionPanel>
+                <SectionPanel
+                    header={
+                        <div className="flex items-center gap-3">
+                            <div className="p-2.5 bg-slate-100 dark:bg-slate-700 rounded-2xl text-slate-500 dark:text-slate-400">
+                                <svg
+                                    className="w-5 h-5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth="2"
+                                        d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                                    />
+                                </svg>
+                            </div>
+                            <div>
+                                <p className="text-xs uppercase tracking-wider font-semibold text-slate-400 dark:text-slate-500">
+                                    Total en cuentas principales
+                                </p>
+                                <h3 className="text-2xl font-extrabold text-slate-900 dark:text-white">
+                                    {formatMoney(totalAvailableAmount)}
+                                </h3>
+                            </div>
+                        </div>
+                    }
+                    expanded={isMainAccountsExpanded}
+                    onToggle={() =>
+                        setIsMainAccountsExpanded((expanded) => !expanded)
+                    }
+                >
                     {isMainAccountsExpanded && (
                         <>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full lg:w-auto">
                                 {accountBalances.map((account) => (
                                     <div
                                         key={account.id}
-                                        className="rounded-3xl bg-slate-50 dark:bg-slate-900/40 p-4 border border-slate-100 dark:border-slate-700"
+                                        className="rounded-3xl bg-slate-50 dark:bg-slate-900/40 p-4 border border-slate-100 dark:border-slate-700 flex items-center gap-3"
                                     >
-                                        <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400">
-                                            {account.name}
-                                        </p>
-                                        <p className="text-xl font-bold text-slate-800 dark:text-slate-100">
-                                            {formatMoney(
-                                                account.available_amount,
+                                        <div
+                                            className={`p-2 rounded-xl shrink-0 ${account.type === "ahorro" ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-500" : "bg-rose-100 dark:bg-rose-900/40 text-rose-500"}`}
+                                        >
+                                            {account.type === "ahorro" ? (
+                                                <svg
+                                                    className="w-4 h-4"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <path
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                        strokeWidth="2"
+                                                        d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"
+                                                    />
+                                                </svg>
+                                            ) : (
+                                                <svg
+                                                    className="w-4 h-4"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <path
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                        strokeWidth="2"
+                                                        d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+                                                    />
+                                                </svg>
                                             )}
-                                        </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400">
+                                                {account.name}
+                                            </p>
+                                            <p className="text-xl font-bold text-slate-800 dark:text-slate-100">
+                                                {formatMoney(
+                                                    account.available_amount,
+                                                )}
+                                            </p>
+                                        </div>
                                     </div>
                                 ))}
                             </div>
@@ -1017,7 +1051,7 @@ export default function Dashboard({
                             )}
                         </>
                     )}
-                </section>
+                </SectionPanel>
                 {/* TARJETA PRINCIPAL */}
                 <div
                     ref={budgetTrackRef}
@@ -1085,140 +1119,26 @@ export default function Dashboard({
                                   )
                                 : 0;
                         return (
-                            <div
+                            <BudgetCard
                                 key={budget.id}
-                                onClick={() =>
+                                budget={budget}
+                                index={index}
+                                active={budgetActive}
+                                isSelected={isSelected}
+                                coverImageUrl={coverImageUrl}
+                                stackStyle={stackStyle}
+                                handle3DMove={handle3DMove}
+                                handle3DLeave={handle3DLeave}
+                                onSelect={() =>
                                     setSelectedBudgetId(
                                         isSelected ? null : budget.id,
                                     )
                                 }
-                                onMouseMove={handle3DMove}
-                                onMouseLeave={handle3DLeave}
-                                className={`cursor-pointer p-6 rounded-3xl border relative overflow-hidden flex flex-col justify-between ${
-                                    isSelected
-                                        ? "border-transparent shadow-xl"
-                                        : "bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700/50 shadow-sm hover:border-emerald-200 dark:hover:border-emerald-800/50"
-                                }`}
-                                style={{
-                                    ...stackStyle(index, budgetActive),
-                                    width: CARD_W,
-                                    minWidth: CARD_W,
-                                    minHeight: 190,
-                                    ...(isSelected
-                                        ? {
-                                              backgroundImage: coverImageUrl
-                                                  ? `url(${coverImageUrl})`
-                                                  : undefined,
-                                              backgroundSize: "cover",
-                                              backgroundPosition: "center",
-                                              backgroundColor: coverImageUrl
-                                                  ? undefined
-                                                  : "#1e293b",
-                                          }
-                                        : {}),
-                                }}
-                            >
-                                {isSelected && (
-                                    <div
-                                        className="absolute inset-0 rounded-3xl"
-                                        style={{
-                                            background: coverImageUrl
-                                                ? "rgba(0,0,0,0.2)"
-                                                : "rgba(15,23,42,0.4)",
-                                        }}
-                                    />
-                                )}
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleDeleteBudget(budget.id);
-                                    }}
-                                    title="Eliminar cuenta"
-                                    className="absolute top-2 right-4 z-20 text-slate-400 hover:text-rose-500 p-1 rounded-full bg-white/60 dark:bg-slate-800/60"
-                                >
-                                    <svg
-                                        className="w-4 h-4"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth="2"
-                                            d="M6 18L18 6M6 6l12 12"
-                                        />
-                                    </svg>
-                                </button>
-                                <span
-                                    className={`absolute top-10 right-4 z-10 px-2.5 py-1 rounded-full text-[10px] font-extrabold tracking-wider ${
-                                        budget.type === "ahorro"
-                                            ? isSelected
-                                                ? "bg-emerald-400/25 text-emerald-100 border border-emerald-200/40"
-                                                : "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300"
-                                            : isSelected
-                                              ? "bg-rose-400/25 text-rose-100 border border-rose-200/40"
-                                              : "bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300"
-                                    }`}
-                                >
-                                    {budget.type === "ahorro"
-                                        ? "AHORRO"
-                                        : "GASTO"}
-                                </span>
-                                <div className="relative z-10">
-                                    <div
-                                        className={`text-xs font-bold uppercase tracking-wider mb-2 ${isSelected ? "text-white/80" : "text-slate-400 dark:text-slate-500"}`}
-                                    >
-                                        {budget.name}
-                                    </div>
-                                    <div
-                                        className={`text-3xl font-extrabold mb-1 ${isSelected ? "text-white" : "text-slate-800 dark:text-slate-100"}`}
-                                    >
-                                        {formatMoney(budget.available_amount)}
-                                    </div>
-                                    <div
-                                        className={`text-xs font-semibold mt-1 ${
-                                            isSelected
-                                                ? budget.type === "ahorro"
-                                                    ? "text-emerald-200"
-                                                    : "text-rose-200"
-                                                : budget.type === "ahorro"
-                                                  ? "text-emerald-500"
-                                                  : "text-rose-400"
-                                        }`}
-                                    >
-                                        {budget.type === "ahorro"
-                                            ? `Meta: ${formatMoney(budget.initial_amount)}${budget.target_month ? ` · ${formatMonthSpanish(budget.target_month)}` : ""}`
-                                            : `Gastos: ${formatMoney(budgetTotal)}`}
-                                    </div>
-                                </div>
-                                <div className="relative z-10">
-                                    <div
-                                        className={`w-full rounded-full h-2 mb-3 ${isSelected ? "bg-white/20" : "bg-slate-100 dark:bg-slate-700"}`}
-                                    >
-                                        <div
-                                            className={`h-2 rounded-full transition-all duration-300 ${isSelected ? "bg-white" : budget.type === "ahorro" ? "bg-emerald-400" : "bg-emerald-500"}`}
-                                            style={{ width: `${pct}%` }}
-                                        ></div>
-                                    </div>
-                                    <div
-                                        className={`flex justify-between text-xs ${isSelected ? "text-white/70" : "text-slate-400 dark:text-slate-500"}`}
-                                    >
-                                        <span>
-                                            {budget.type === "ahorro"
-                                                ? "Meta"
-                                                : "Inicial"}
-                                            :{" "}
-                                            {formatMoney(budget.initial_amount)}
-                                        </span>
-                                        <span>
-                                            {budget.type === "ahorro"
-                                                ? `${Math.min(100, Math.round(pct))}%`
-                                                : `${budget.sub_accounts.length} subcuentas`}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
+                                onDelete={() => handleDeleteBudget(budget.id)}
+                                formatMoney={formatMoney}
+                                formatMonthSpanish={formatMonthSpanish}
+                                CARD_W={CARD_W}
+                            />
                         );
                     })}
                 </div>
@@ -1463,98 +1383,28 @@ export default function Dashboard({
                                         const isSelected =
                                             selectedSubAccountId === sub.id;
                                         return (
-                                            <div
+                                            <SubAccountCard
                                                 key={sub.id}
-                                                onClick={() =>
+                                                sub={sub}
+                                                index={index}
+                                                active={subActive}
+                                                isSelected={isSelected}
+                                                stackStyle={stackStyle}
+                                                handle3DMove={handle3DMove}
+                                                handle3DLeave={handle3DLeave}
+                                                onSelect={() =>
                                                     setSelectedSubAccountId(
                                                         isSelected
                                                             ? null
                                                             : sub.id,
                                                     )
                                                 }
-                                                onMouseMove={handle3DMove}
-                                                onMouseLeave={handle3DLeave}
-                                                className={`cursor-pointer p-6 rounded-3xl border flex flex-col justify-between ${
-                                                    isSelected
-                                                        ? "bg-slate-100 dark:bg-slate-700 border-slate-400 dark:border-slate-500"
-                                                        : `bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700/50 ${bgHoverColor}`
-                                                }`}
-                                                style={{
-                                                    ...stackStyle(
-                                                        index,
-                                                        subActive,
-                                                    ),
-                                                    width: CARD_W,
-                                                    minWidth: CARD_W,
-                                                    minHeight: 190,
-                                                }}
-                                            >
-                                                <div className="flex items-center gap-4">
-                                                    {getSubAccountIcon(
-                                                        sub.name,
-                                                    )}
-                                                    <div className="flex-1 min-w-0">
-                                                        <h4 className="text-base font-bold text-slate-800 dark:text-slate-100 truncate">
-                                                            {sub.name}
-                                                        </h4>
-                                                        <p
-                                                            className={`text-xs uppercase tracking-widest font-semibold ${sub.type === "ahorro" ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}
-                                                        >
-                                                            {sub.type ===
-                                                            "ahorro"
-                                                                ? "Ahorro"
-                                                                : "Gasto"}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <div className="flex items-baseline justify-between">
-                                                        <span className="text-sm text-slate-400 dark:text-slate-500">
-                                                            Disponible
-                                                        </span>
-                                                        <span
-                                                            className={`text-xl font-extrabold ${percentRemaining <= 20 ? "text-rose-600 dark:text-rose-400" : "text-slate-700 dark:text-slate-200"}`}
-                                                        >
-                                                            {formatMoney(
-                                                                sub.current_amount,
-                                                            )}
-                                                        </span>
-                                                    </div>
-                                                    <div className="flex justify-between text-xs text-slate-400 dark:text-slate-500">
-                                                        <span>
-                                                            Asignado:{" "}
-                                                            {formatMoney(
-                                                                sub.initial_amount,
-                                                            )}
-                                                        </span>
-                                                        <span>
-                                                            {Math.max(
-                                                                0,
-                                                                Math.round(
-                                                                    percentRemaining,
-                                                                ),
-                                                            )}
-                                                            %
-                                                        </span>
-                                                    </div>
-                                                    {percentRemaining <= 20 && (
-                                                        <p className="text-xs font-bold text-rose-500">
-                                                            {percentRemaining <=
-                                                            0
-                                                                ? "Límite alcanzado"
-                                                                : "Alerta: queda menos del 20%"}
-                                                        </p>
-                                                    )}
-                                                    <div className="w-full bg-slate-100 dark:bg-slate-900 rounded-full h-2">
-                                                        <div
-                                                            className={`h-2 rounded-full transition-all duration-300 ${progressColor}`}
-                                                            style={{
-                                                                width: `${Math.max(0, Math.min(100, percentRemaining))}%`,
-                                                            }}
-                                                        ></div>
-                                                    </div>
-                                                </div>
-                                            </div>
+                                                getSubAccountIcon={
+                                                    getSubAccountIcon
+                                                }
+                                                formatMoney={formatMoney}
+                                                CARD_W={CARD_W}
+                                            />
                                         );
                                     })}
                                 </div>
@@ -1576,50 +1426,19 @@ export default function Dashboard({
                                         ) : (
                                             <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
                                                 {allExpenses.map((expense) => (
-                                                    <div
+                                                    <ExpenseRow
                                                         key={expense.id}
-                                                        className="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-slate-900/20 border border-slate-100/50 dark:border-slate-800 rounded-2xl"
-                                                    >
-                                                        <div className="min-w-0 flex-1 pr-4">
-                                                            <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">
-                                                                {expense.comment ||
-                                                                    "Depósito"}
-                                                            </p>
-                                                            <p className="text-[10px] text-slate-400 dark:text-slate-500">
-                                                                {formatDate(
-                                                                    expense.date,
-                                                                )}
-                                                            </p>
-                                                        </div>
-                                                        <div className="flex items-center gap-3">
-                                                            <span className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400">
-                                                                +
-                                                                {formatMoney(
-                                                                    expense.amount,
-                                                                )}
-                                                            </span>
-                                                            <button
-                                                                onClick={() =>
-                                                                    openEditRecord(
-                                                                        expense,
-                                                                    )
-                                                                }
-                                                                className="text-slate-400 hover:text-emerald-500 text-xs font-bold"
-                                                            >
-                                                                Editar
-                                                            </button>
-                                                            <button
-                                                                onClick={() =>
-                                                                    handleDeleteExpense(
-                                                                        expense.id,
-                                                                    )
-                                                                }
-                                                                className="text-slate-400 hover:text-rose-500 text-xs font-bold"
-                                                            >
-                                                                Eliminar
-                                                            </button>
-                                                        </div>
-                                                    </div>
+                                                        expense={expense}
+                                                        type="ahorro"
+                                                        onEdit={openEditRecord}
+                                                        onDelete={
+                                                            handleDeleteExpense
+                                                        }
+                                                        formatMoney={
+                                                            formatMoney
+                                                        }
+                                                        formatDate={formatDate}
+                                                    />
                                                 ))}
                                             </div>
                                         )}
@@ -1708,63 +1527,25 @@ export default function Dashboard({
                                                 <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
                                                     {activeSubAccount.expenses.map(
                                                         (expense) => (
-                                                            <div
+                                                            <ExpenseRow
                                                                 key={expense.id}
-                                                                className="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-slate-900/20 border border-slate-100/50 dark:border-slate-800 rounded-2xl hover:bg-slate-100/40 dark:hover:bg-slate-800/20 transition-all"
-                                                            >
-                                                                <div className="min-w-0 flex-1 pr-4">
-                                                                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">
-                                                                        {expense.comment ||
-                                                                            "Gasto registrado"}
-                                                                    </p>
-                                                                    <p className="text-[10px] text-slate-400 dark:text-slate-500">
-                                                                        {formatDate(
-                                                                            expense.date,
-                                                                        )}
-                                                                    </p>
-                                                                </div>
-                                                                <div className="flex items-center gap-3">
-                                                                    <span className="text-sm font-extrabold text-rose-600 dark:text-rose-400">
-                                                                        -
-                                                                        {formatMoney(
-                                                                            expense.amount,
-                                                                        )}
-                                                                    </span>
-                                                                    <button
-                                                                        onClick={() =>
-                                                                            openEditRecord(
-                                                                                expense,
-                                                                            )
-                                                                        }
-                                                                        className="text-slate-400 hover:text-emerald-500 text-xs font-bold"
-                                                                    >
-                                                                        Editar
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={() =>
-                                                                            handleDeleteExpense(
-                                                                                expense.id,
-                                                                            )
-                                                                        }
-                                                                        className="text-slate-300 hover:text-rose-500 active:scale-90 transition-all"
-                                                                        title="Eliminar gasto"
-                                                                    >
-                                                                        <svg
-                                                                            className="w-4.5 h-4.5"
-                                                                            fill="none"
-                                                                            stroke="currentColor"
-                                                                            viewBox="0 0 24 24"
-                                                                        >
-                                                                            <path
-                                                                                strokeLinecap="round"
-                                                                                strokeLinejoin="round"
-                                                                                strokeWidth="2"
-                                                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                                                            />
-                                                                        </svg>
-                                                                    </button>
-                                                                </div>
-                                                            </div>
+                                                                expense={
+                                                                    expense
+                                                                }
+                                                                type="gasto"
+                                                                onEdit={
+                                                                    openEditRecord
+                                                                }
+                                                                onDelete={
+                                                                    handleDeleteExpense
+                                                                }
+                                                                formatMoney={
+                                                                    formatMoney
+                                                                }
+                                                                formatDate={
+                                                                    formatDate
+                                                                }
+                                                            />
                                                         ),
                                                     )}
                                                 </div>
@@ -1867,399 +1648,320 @@ export default function Dashboard({
 
             {/* Modal Crear Cuenta */}
             {isBudgetModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-                    <div className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-3xl p-6 w-full max-w-md shadow-2xl relative">
-                        <button
-                            onClick={() => setIsBudgetModalOpen(false)}
-                            className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
-                        >
-                            <svg
-                                className="w-6 h-6"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth="2"
-                                    d="M6 18L18 6M6 6l12 12"
-                                />
-                            </svg>
-                        </button>
-                        <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-2">
-                            Nueva Cuenta
-                        </h3>
-                        <p className="text-slate-400 dark:text-slate-500 text-xs mb-6">
-                            Crea una nueva cuenta principal con nombre y monto
-                            disponible.
-                        </p>
-                        <form
-                            onSubmit={handleBudgetSubmit}
-                            className="space-y-4"
-                        >
+                <DashboardModal
+                    open={isBudgetModalOpen}
+                    onClose={() => setIsBudgetModalOpen(false)}
+                    title="Nueva Cuenta"
+                    subtitle="Crea una nueva cuenta principal con nombre y monto disponible."
+                >
+                    <form onSubmit={handleBudgetSubmit} className="space-y-4">
+                        <div>
+                            <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
+                                Nombre de la Cuenta
+                            </label>
+                            <input
+                                type="text"
+                                value={budgetForm.data.name.toUpperCase()}
+                                onChange={(e) =>
+                                    budgetForm.setData(
+                                        "name",
+                                        e.target.value.toUpperCase(),
+                                    )
+                                }
+                                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                required
+                                maxLength={100}
+                            />
+                            {budgetForm.errors.name && (
+                                <p className="text-red-500 text-xs mt-1">
+                                    {budgetForm.errors.name}
+                                </p>
+                            )}
+                        </div>
+                        {budgetForm.data.type === "ahorro" && (
                             <div>
                                 <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
-                                    Nombre de la Cuenta
+                                    Fecha Meta
                                 </label>
                                 <input
-                                    type="text"
-                                    value={budgetForm.data.name.toUpperCase()}
+                                    type="month"
+                                    min={selectedMonth}
+                                    value={budgetForm.data.target_month}
                                     onChange={(e) =>
                                         budgetForm.setData(
-                                            "name",
-                                            e.target.value.toUpperCase(),
-                                        )
-                                    }
-                                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                    required
-                                    maxLength={100}
-                                />
-                                {budgetForm.errors.name && (
-                                    <p className="text-red-500 text-xs mt-1">
-                                        {budgetForm.errors.name}
-                                    </p>
-                                )}
-                            </div>
-                            {budgetForm.data.type === "ahorro" && (
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
-                                        Fecha Meta
-                                    </label>
-                                    <input
-                                        type="month"
-                                        min={selectedMonth}
-                                        value={budgetForm.data.target_month}
-                                        onChange={(e) =>
-                                            budgetForm.setData(
-                                                "target_month",
-                                                e.target.value,
-                                            )
-                                        }
-                                        className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                        required
-                                    />
-                                    <p className="text-[10px] text-slate-400 mt-1">
-                                        Mes y año en que quieres completar esta
-                                        meta.
-                                    </p>
-                                    {budgetForm.errors.target_month && (
-                                        <p className="text-red-500 text-xs mt-1">
-                                            {budgetForm.errors.target_month}
-                                        </p>
-                                    )}
-                                </div>
-                            )}
-                            <div>
-                                <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
-                                    Tipo de Cuenta
-                                </label>
-                                <select
-                                    value={budgetForm.data.type}
-                                    onChange={(e) =>
-                                        budgetForm.setData(
-                                            "type",
+                                            "target_month",
                                             e.target.value,
                                         )
                                     }
                                     className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                >
-                                    <option value="ahorro">Ahorro</option>
-                                    <option value="gasto">Gasto</option>
-                                </select>
-                                {budgetForm.errors.type && (
+                                    required
+                                />
+                                <p className="text-[10px] text-slate-400 mt-1">
+                                    Mes y año en que quieres completar esta
+                                    meta.
+                                </p>
+                                {budgetForm.errors.target_month && (
                                     <p className="text-red-500 text-xs mt-1">
-                                        {budgetForm.errors.type}
+                                        {budgetForm.errors.target_month}
                                     </p>
                                 )}
                             </div>
-                            <div>
-                                <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
-                                    Monto Disponible
-                                </label>
-                                <div className="relative">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">
-                                        $
-                                    </span>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        placeholder="Ej. 700"
-                                        value={budgetForm.data.amount}
-                                        onChange={(e) =>
-                                            budgetForm.setData(
-                                                "amount",
-                                                e.target.value,
-                                            )
-                                        }
-                                        className="w-full pl-7 pr-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                        required
-                                    />
-                                </div>
-                                {budgetForm.errors.amount && (
-                                    <p className="text-red-500 text-xs mt-1">
-                                        {budgetForm.errors.amount}
-                                    </p>
-                                )}
+                        )}
+                        <div>
+                            <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
+                                Tipo de Cuenta
+                            </label>
+                            <select
+                                value={budgetForm.data.type}
+                                onChange={(e) =>
+                                    budgetForm.setData("type", e.target.value)
+                                }
+                                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                            >
+                                <option value="ahorro">Ahorro</option>
+                                <option value="gasto">Gasto</option>
+                            </select>
+                            {budgetForm.errors.type && (
+                                <p className="text-red-500 text-xs mt-1">
+                                    {budgetForm.errors.type}
+                                </p>
+                            )}
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
+                                Monto Disponible
+                            </label>
+                            <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">
+                                    $
+                                </span>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    placeholder="Ej. 700"
+                                    value={budgetForm.data.amount}
+                                    onChange={(e) =>
+                                        budgetForm.setData(
+                                            "amount",
+                                            e.target.value,
+                                        )
+                                    }
+                                    className="w-full pl-7 pr-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                    required
+                                />
                             </div>
-                            <div className="flex gap-3 pt-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setIsBudgetModalOpen(false)}
-                                    className="w-1/2 py-2.5 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-xl text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={budgetForm.processing}
-                                    className="w-1/2 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl text-sm transition-colors disabled:opacity-50"
-                                >
-                                    {budgetForm.processing
-                                        ? "Creando..."
-                                        : "Crear Cuenta"}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+                            {budgetForm.errors.amount && (
+                                <p className="text-red-500 text-xs mt-1">
+                                    {budgetForm.errors.amount}
+                                </p>
+                            )}
+                        </div>
+                        <div className="flex gap-3 pt-2">
+                            <button
+                                type="button"
+                                onClick={() => setIsBudgetModalOpen(false)}
+                                className="w-1/2 py-2.5 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-xl text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={budgetForm.processing}
+                                className="w-1/2 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl text-sm transition-colors disabled:opacity-50"
+                            >
+                                {budgetForm.processing
+                                    ? "Creando..."
+                                    : "Crear Cuenta"}
+                            </button>
+                        </div>
+                    </form>
+                </DashboardModal>
             )}
 
             {/* Modal Crear Subcuenta */}
             {isSubAccountModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-                    <div className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-3xl p-6 w-full max-w-md shadow-2xl relative">
-                        <button
-                            onClick={() => setIsSubAccountModalOpen(false)}
-                            className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
-                        >
-                            <svg
-                                className="w-6 h-6"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth="2"
-                                    d="M6 18L18 6M6 6l12 12"
-                                />
-                            </svg>
-                        </button>
-                        <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-2">
-                            Nueva Subcuenta
-                        </h3>
-                        <p className="text-slate-400 dark:text-slate-500 text-xs mb-6">
-                            Asigna parte de {selectedBudget?.name} a una
-                            subcuenta específica.
-                        </p>
-                        <form
-                            onSubmit={handleSubAccountSubmit}
-                            className="space-y-4"
-                        >
-                            <div>
-                                <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
-                                    Nombre de la Subcuenta
-                                </label>
+                <DashboardModal
+                    open={isSubAccountModalOpen}
+                    onClose={() => setIsSubAccountModalOpen(false)}
+                    title="Nueva Subcuenta"
+                    subtitle={`Asigna parte de ${selectedBudget?.name} a una subcuenta específica.`}
+                >
+                    <form
+                        onSubmit={handleSubAccountSubmit}
+                        className="space-y-4"
+                    >
+                        <div>
+                            <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
+                                Nombre de la Subcuenta
+                            </label>
+                            <input
+                                type="text"
+                                value={subAccountForm.data.name}
+                                onChange={(e) =>
+                                    subAccountForm.setData(
+                                        "name",
+                                        e.target.value.toUpperCase(),
+                                    )
+                                }
+                                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                required
+                                maxLength={100}
+                            />
+                            {subAccountForm.errors.name && (
+                                <p className="text-red-500 text-xs mt-1">
+                                    {subAccountForm.errors.name}
+                                </p>
+                            )}
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
+                                Monto Asignado
+                            </label>
+                            <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">
+                                    $
+                                </span>
                                 <input
-                                    type="text"
-                                    value={subAccountForm.data.name}
+                                    type="number"
+                                    step="0.01"
+                                    placeholder={`Máximo: ${remainingToAllocate}`}
+                                    value={subAccountForm.data.amount}
                                     onChange={(e) =>
                                         subAccountForm.setData(
-                                            "name",
-                                            e.target.value.toUpperCase(),
+                                            "amount",
+                                            e.target.value,
                                         )
                                     }
-                                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                    className="w-full pl-7 pr-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                     required
-                                    maxLength={100}
                                 />
-                                {subAccountForm.errors.name && (
-                                    <p className="text-red-500 text-xs mt-1">
-                                        {subAccountForm.errors.name}
-                                    </p>
-                                )}
                             </div>
-
-                            <div>
-                                <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
-                                    Monto Asignado
-                                </label>
-                                <div className="relative">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">
-                                        $
-                                    </span>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        placeholder={`Máximo: ${remainingToAllocate}`}
-                                        value={subAccountForm.data.amount}
-                                        onChange={(e) =>
-                                            subAccountForm.setData(
-                                                "amount",
-                                                e.target.value,
-                                            )
-                                        }
-                                        className="w-full pl-7 pr-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                        required
-                                    />
-                                </div>
-                                <span className="text-[10px] text-slate-400 mt-1 block">
-                                    Disponible para asignar:{" "}
-                                    {formatMoney(remainingToAllocate)}
-                                </span>
-                                {subAccountForm.errors.amount && (
-                                    <p className="text-red-500 text-xs mt-1">
-                                        {subAccountForm.errors.amount}
-                                    </p>
-                                )}
-                            </div>
-                            <div className="flex gap-3 pt-2">
-                                <button
-                                    type="button"
-                                    onClick={() =>
-                                        setIsSubAccountModalOpen(false)
-                                    }
-                                    className="w-1/2 py-2.5 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-xl text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={subAccountForm.processing}
-                                    className="w-1/2 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl text-sm transition-colors disabled:opacity-50"
-                                >
-                                    {subAccountForm.processing
-                                        ? "Creando..."
-                                        : "Crear Subcuenta"}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+                            <span className="text-[10px] text-slate-400 mt-1 block">
+                                Disponible para asignar:{" "}
+                                {formatMoney(remainingToAllocate)}
+                            </span>
+                            {subAccountForm.errors.amount && (
+                                <p className="text-red-500 text-xs mt-1">
+                                    {subAccountForm.errors.amount}
+                                </p>
+                            )}
+                        </div>
+                        <div className="flex gap-3 pt-2">
+                            <button
+                                type="button"
+                                onClick={() => setIsSubAccountModalOpen(false)}
+                                className="w-1/2 py-2.5 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-xl text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={subAccountForm.processing}
+                                className="w-1/2 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl text-sm transition-colors disabled:opacity-50"
+                            >
+                                {subAccountForm.processing
+                                    ? "Creando..."
+                                    : "Crear Subcuenta"}
+                            </button>
+                        </div>
+                    </form>
+                </DashboardModal>
             )}
 
             {/* Modal Agregar Gasto */}
             {isExpenseModalOpen && activeSubAccount && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-                    <div className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-3xl p-6 w-full max-w-md shadow-2xl relative">
-                        <button
-                            onClick={() => setIsExpenseModalOpen(false)}
-                            className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
-                        >
-                            <svg
-                                className="w-6 h-6"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth="2"
-                                    d="M6 18L18 6M6 6l12 12"
-                                />
-                            </svg>
-                        </button>
-                        <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-1">
-                            Agregar Gasto: {activeSubAccount.name}
-                        </h3>
-                        <p className="text-slate-400 dark:text-slate-500 text-xs mb-6">
-                            Registra una compra y el saldo se restará de la
-                            subcuenta.
-                        </p>
-                        <form
-                            onSubmit={handleExpenseSubmit}
-                            className="space-y-4"
-                        >
-                            <div>
-                                <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
-                                    Monto del Gasto
-                                </label>
-                                <div className="relative">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">
-                                        $
-                                    </span>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        value={expenseForm.data.amount}
-                                        onChange={(e) =>
-                                            expenseForm.setData(
-                                                "amount",
-                                                e.target.value,
-                                            )
-                                        }
-                                        className="w-full pl-7 pr-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                        required
-                                    />
-                                </div>
-                                <span className="text-[10px] text-slate-400 mt-1 block">
-                                    Saldo disponible:{" "}
-                                    {formatMoney(
-                                        activeSubAccount.current_amount,
-                                    )}
+                <DashboardModal
+                    open={isExpenseModalOpen}
+                    onClose={() => setIsExpenseModalOpen(false)}
+                    title={`Agregar Gasto: ${activeSubAccount.name}`}
+                    subtitle="Registra una compra y el saldo se restará de la subcuenta."
+                >
+                    <form onSubmit={handleExpenseSubmit} className="space-y-4">
+                        <div>
+                            <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
+                                Monto del Gasto
+                            </label>
+                            <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">
+                                    $
                                 </span>
-                                {expenseForm.data.amount &&
-                                    parseFloat(expenseForm.data.amount) >
-                                        parseFloat(
-                                            activeSubAccount.current_amount,
-                                        ) && (
-                                        <p className="text-amber-500 text-[10px] font-semibold mt-1">
-                                            Advertencia: El gasto excede el
-                                            saldo (quedará negativo).
-                                        </p>
-                                    )}
-                                {expenseForm.errors.amount && (
-                                    <p className="text-red-500 text-xs mt-1">
-                                        {expenseForm.errors.amount}
-                                    </p>
-                                )}
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
-                                    Comentario / Descripción
-                                </label>
                                 <input
-                                    type="text"
-                                    value={expenseForm.data.comment}
+                                    type="number"
+                                    step="0.01"
+                                    value={expenseForm.data.amount}
                                     onChange={(e) =>
                                         expenseForm.setData(
-                                            "comment",
-                                            e.target.value.toUpperCase(),
+                                            "amount",
+                                            e.target.value,
                                         )
                                     }
-                                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                    maxLength={255}
+                                    className="w-full pl-7 pr-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                    required
                                 />
-                                {expenseForm.errors.comment && (
-                                    <p className="text-red-500 text-xs mt-1">
-                                        {expenseForm.errors.comment}
+                            </div>
+                            <span className="text-[10px] text-slate-400 mt-1 block">
+                                Saldo disponible:{" "}
+                                {formatMoney(activeSubAccount.current_amount)}
+                            </span>
+                            {expenseForm.data.amount &&
+                                parseFloat(expenseForm.data.amount) >
+                                    parseFloat(
+                                        activeSubAccount.current_amount,
+                                    ) && (
+                                    <p className="text-amber-500 text-[10px] font-semibold mt-1">
+                                        Advertencia: El gasto excede el saldo
+                                        (quedará negativo).
                                     </p>
                                 )}
-                            </div>
-                            <div className="flex gap-3 pt-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setIsExpenseModalOpen(false)}
-                                    className="w-1/2 py-2.5 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-xl text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={expenseForm.processing}
-                                    className="w-1/2 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl text-sm transition-colors disabled:opacity-50"
-                                >
-                                    {expenseForm.processing
-                                        ? "Guardando..."
-                                        : "Guardar Gasto"}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+                            {expenseForm.errors.amount && (
+                                <p className="text-red-500 text-xs mt-1">
+                                    {expenseForm.errors.amount}
+                                </p>
+                            )}
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
+                                Comentario / Descripción
+                            </label>
+                            <input
+                                type="text"
+                                value={expenseForm.data.comment}
+                                onChange={(e) =>
+                                    expenseForm.setData(
+                                        "comment",
+                                        e.target.value.toUpperCase(),
+                                    )
+                                }
+                                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                maxLength={255}
+                            />
+                            {expenseForm.errors.comment && (
+                                <p className="text-red-500 text-xs mt-1">
+                                    {expenseForm.errors.comment}
+                                </p>
+                            )}
+                        </div>
+                        <div className="flex gap-3 pt-2">
+                            <button
+                                type="button"
+                                onClick={() => setIsExpenseModalOpen(false)}
+                                className="w-1/2 py-2.5 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-xl text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={expenseForm.processing}
+                                className="w-1/2 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl text-sm transition-colors disabled:opacity-50"
+                            >
+                                {expenseForm.processing
+                                    ? "Guardando..."
+                                    : "Guardar Gasto"}
+                            </button>
+                        </div>
+                    </form>
+                </DashboardModal>
             )}
             {isBudgetEditOpen && selectedBudget && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
