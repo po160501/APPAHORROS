@@ -7,6 +7,7 @@ import StatCard from "@/Components/Dashboard/StatCard";
 import SubAccountCard from "@/Components/Dashboard/SubAccountCard";
 import { Head, useForm, router, usePage } from "@inertiajs/react";
 import { useState, useEffect, useRef } from "react";
+import * as Icons from "lucide-react";
 
 export default function Dashboard({
     budgets,
@@ -25,6 +26,7 @@ export default function Dashboard({
     const [editingRecord, setEditingRecord] = useState(null);
     const [isBudgetEditOpen, setIsBudgetEditOpen] = useState(false);
     const [isHistorialOpen, setIsHistorialOpen] = useState(false);
+    const [isHistorialOpen1, setIsHistorialOpen1] = useState(false);
     const [isSubAccountEditOpen, setIsSubAccountEditOpen] = useState(false);
     const [isMainAccountsExpanded, setIsMainAccountsExpanded] = useState(false);
     const [isSummaryExpanded, setIsSummaryExpanded] = useState(false);
@@ -286,16 +288,21 @@ export default function Dashboard({
         });
     };
 
-    const openBudgetEdit = () => {
+    const openBudgetEdit = (budget = selectedBudget) => {
+        if (!budget) return;
+
+        setSelectedBudgetId(budget.id);
         setBudgetEditData({
-            name: selectedBudget.name,
-            amount: selectedBudget.initial_amount,
-            target_month: selectedBudget.target_month || "",
+            name: budget.name,
+            amount: budget.initial_amount,
+            target_month: budget.target_month || "",
         });
         setIsBudgetEditOpen(true);
     };
     const handleBudgetEditSubmit = (e) => {
         e.preventDefault();
+        if (!selectedBudget) return;
+
         router.put(route("budgets.update", selectedBudget.id), budgetEditData, {
             preserveScroll: true,
             onSuccess: () => setIsBudgetEditOpen(false),
@@ -493,19 +500,7 @@ export default function Dashboard({
         ) {
             return (
                 <div className="p-3 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-2xl">
-                    <svg
-                        className="w-6 h-6"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-                        />
-                    </svg>
+                    <Icons.Send className="w-6 h-6" />
                 </div>
             );
         }
@@ -596,19 +591,7 @@ export default function Dashboard({
         }
         return (
             <div className="p-3 bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 rounded-2xl">
-                <svg
-                    className="w-6 h-6"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                >
-                    <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
-                    />
-                </svg>
+                <Icons.CreditCard className="w-6 h-6" />
             </div>
         );
     };
@@ -646,25 +629,30 @@ export default function Dashboard({
             <Head title="Control de Ahorros" />
             <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto space-y-8">
                 {selectedBudget && (
-            <div className="space-y-8">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                                    Cuenta seleccionada
-                                </p>
-                                <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">
-                                    {selectedBudget.name}
-                                </h3>
-                            </div>
-                            <button
-                                onClick={openBudgetEdit}
-                                className="px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-emerald-600"
-                            >
-                                Editar
-                            </button>
-                        </div>
-            </div>
-            )}
+                    <div className="space-y-8">
+                        <SectionPanel
+                            header={
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-2xl font-extrabold text-slate-900 dark:text-white">
+                                        {formatMoney(totalAvailableAmount)}
+                                    </h3>
+
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => {
+                                                setIsHistorialOpen1(true);
+                                                setIsMainAccountsExpanded(true);
+                                            }}
+                                            className="border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/40 text-slate-600 dark:text-slate-300 font-semibold px-3 py-2 rounded-xl text-xs transition-all"
+                                        >
+                                            Transferir
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+                        ></SectionPanel>
+                    </div>
+                )}
                 {/* TARJETA PRINCIPAL */}
                 <div
                     ref={budgetTrackRef}
@@ -692,19 +680,7 @@ export default function Dashboard({
                                     }}
                                 >
                                     <div className="p-2.5 bg-emerald-100 dark:bg-emerald-900/40 rounded-full text-emerald-500 dark:text-emerald-400 mb-2">
-                                        <svg
-                                            className="w-5 h-5"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth="2"
-                                                d="M12 4v16m8-8H4"
-                                            />
-                                        </svg>
+                                        <Icons.Plus className="w-5 h-5" />
                                     </div>
                                     <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
                                         Crear Cuenta
@@ -748,6 +724,7 @@ export default function Dashboard({
                                     );
                                     scrollToCard(budgetTrackRef, index);
                                 }}
+                                onEdit={(budget) => openBudgetEdit(budget)}
                                 onDelete={() => handleDeleteBudget(budget.id)}
                                 formatMoney={formatMoney}
                                 formatMonthSpanish={formatMonthSpanish}
@@ -935,19 +912,7 @@ export default function Dashboard({
                                                     }}
                                                 >
                                                     <div className="p-2.5 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-400 dark:text-slate-500 mb-2">
-                                                        <svg
-                                                            className="w-5 h-5"
-                                                            fill="none"
-                                                            stroke="currentColor"
-                                                            viewBox="0 0 24 24"
-                                                        >
-                                                            <path
-                                                                strokeLinecap="round"
-                                                                strokeLinejoin="round"
-                                                                strokeWidth="2"
-                                                                d="M12 4v16m8-8H4"
-                                                            />
-                                                        </svg>
+                                                        <Icons.Plus className="w-5 h-5" />
                                                     </div>
                                                     <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
                                                         Crear Subcuenta
@@ -1023,7 +988,9 @@ export default function Dashboard({
                                                 Historial de Ahorros
                                             </h4>
                                             <button
-                                                onClick={() => setIsHistorialOpen(true)}
+                                                onClick={() =>
+                                                    setIsHistorialOpen(true)
+                                                }
                                                 className="text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5 transition-colors"
                                             >
                                                 Ver todo
@@ -1129,7 +1096,9 @@ export default function Dashboard({
                                                     Historial de Gastos
                                                 </h4>
                                                 <button
-                                                    onClick={() => setIsHistorialOpen(true)}
+                                                    onClick={() =>
+                                                        setIsHistorialOpen(true)
+                                                    }
                                                     className="text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5 transition-colors"
                                                 >
                                                     Ver todo
@@ -1252,21 +1221,7 @@ export default function Dashboard({
                                     ? `${spendingPctOfIncome.toFixed(1)}% del ingreso`
                                     : "Añade tu ingreso"
                             }
-                            icon={
-                                <svg
-                                    className="w-4 h-4"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"
-                                    />
-                                </svg>
-                            }
+                            icon={<Icons.Wallet className="w-6 h-6" />}
                         />
                         <StatCard
                             color="emerald"
@@ -1277,42 +1232,14 @@ export default function Dashboard({
                                     ? `${savingPctOfIncome.toFixed(1)}% del ingreso`
                                     : "Depósitos del mes"
                             }
-                            icon={
-                                <svg
-                                    className="w-4 h-4"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                                    />
-                                </svg>
-                            }
+                            icon={<Icons.PiggyBankIcon className="w-6 h-6" />}
                         />
                         <StatCard
                             color="slate"
                             label="Ingreso"
                             value={formatMoney(income)}
                             sub={`Disponible: ${formatMoney(income - monthlyExpenses - monthlySavings)}`}
-                            icon={
-                                <svg
-                                    className="w-4 h-4"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
-                                    />
-                                </svg>
-                            }
+                            icon={<Icons.HandCoins className="w-6 h-6" />}
                         />
                         <StatCard
                             color="violet"
@@ -1323,21 +1250,7 @@ export default function Dashboard({
                                     ? `${((categoryTotals[0].amount / monthlyExpenses) * 100).toFixed(0)}% de gastos`
                                     : ""
                             }
-                            icon={
-                                <svg
-                                    className="w-4 h-4"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                                    />
-                                </svg>
-                            }
+                            icon={<Icons.Signal className="w-6 h-6" />}
                         />
                     </div>
                     {categoryTotals.length > 0 && (
@@ -1407,249 +1320,179 @@ export default function Dashboard({
                         </div>
                     )}
                 </SectionPanel>
-                <SectionPanel
-                    header={
-                        <div className="flex items-center gap-3">
-                            <div className="p-2.5 bg-slate-100 dark:bg-slate-700 rounded-2xl text-slate-500 dark:text-slate-400">
-                                <svg
-                                    className="w-5 h-5"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                                    />
-                                </svg>
-                            </div>
-                            <div>
-                                <p className="text-xs uppercase tracking-wider font-semibold text-slate-400 dark:text-slate-500">
-                                    Total en cuentas principales
-                                </p>
-                                <h3 className="text-2xl font-extrabold text-slate-900 dark:text-white">
-                                    {formatMoney(totalAvailableAmount)}
-                                </h3>
-                            </div>
-                        </div>
-                    }
-                    expanded={isMainAccountsExpanded}
-                    onToggle={() =>
-                        setIsMainAccountsExpanded((expanded) => !expanded)
-                    }
-                >
-                    {isMainAccountsExpanded && (
-                        <>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full lg:w-auto">
-                                {accountBalances.map((account) => (
-                                    <div
-                                        key={account.id}
-                                        className="rounded-3xl bg-slate-50 dark:bg-slate-900/40 p-4 border border-slate-100 dark:border-slate-700 flex items-center gap-3"
+
+                {isHistorialOpen1 && selectedBudget && (
+                    <DashboardModal
+                        open={isHistorialOpen1}
+                        onClose={() => {
+                            setIsHistorialOpen1(false);
+                            setIsMainAccountsExpanded(false);
+                        }}
+                    >
+                        {isMainAccountsExpanded && (
+                            <>
+                                {budgets.length >= 2 ? (
+                                    <form
+                                        onSubmit={handleTransferSubmit}
+                                        className="grid gap-4 sm:grid-cols-[1fr_1fr] items-end"
                                     >
-                                        <div
-                                            className={`p-2 rounded-xl shrink-0 ${account.type === "ahorro" ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-500" : "bg-rose-100 dark:bg-rose-900/40 text-rose-500"}`}
-                                        >
-                                            {account.type === "ahorro" ? (
-                                                <svg
-                                                    className="w-4 h-4"
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    viewBox="0 0 24 24"
+                                        <div className="grid gap-4 sm:col-span-2 lg:grid-cols-[1fr_1fr_1fr]">
+                                            <div>
+                                                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+                                                    Desde
+                                                </label>
+                                                <select
+                                                    value={
+                                                        transferForm.data
+                                                            .from_budget_id
+                                                    }
+                                                    onChange={(e) =>
+                                                        transferForm.setData(
+                                                            "from_budget_id",
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-800 dark:text-slate-100"
                                                 >
-                                                    <path
-                                                        strokeLinecap="round"
-                                                        strokeLinejoin="round"
-                                                        strokeWidth="2"
-                                                        d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"
-                                                    />
-                                                </svg>
-                                            ) : (
-                                                <svg
-                                                    className="w-4 h-4"
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    viewBox="0 0 24 24"
+                                                    {budgets.map((budget) => (
+                                                        <option
+                                                            key={budget.id}
+                                                            value={budget.id}
+                                                        >
+                                                            {budget.name} -{" "}
+                                                            {formatMoney(
+                                                                budget.available_amount,
+                                                            )}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+                                                    Hacia
+                                                </label>
+                                                <select
+                                                    value={
+                                                        transferForm.data
+                                                            .to_budget_id
+                                                    }
+                                                    onChange={(e) =>
+                                                        transferForm.setData(
+                                                            "to_budget_id",
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-800 dark:text-slate-100"
                                                 >
-                                                    <path
-                                                        strokeLinecap="round"
-                                                        strokeLinejoin="round"
-                                                        strokeWidth="2"
-                                                        d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
-                                                    />
-                                                </svg>
-                                            )}
+                                                    {budgets.map((budget) => (
+                                                        <option
+                                                            key={budget.id}
+                                                            value={budget.id}
+                                                        >
+                                                            {budget.name} -{" "}
+                                                            {formatMoney(
+                                                                budget.available_amount,
+                                                            )}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+                                                    Monto
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    step="0.01"
+                                                    min="0.01"
+                                                    value={
+                                                        transferForm.data.amount
+                                                    }
+                                                    onChange={(e) =>
+                                                        transferForm.setData(
+                                                            "amount",
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-800 dark:text-slate-100"
+                                                    placeholder="0.00"
+                                                    required
+                                                />
+                                            </div>
                                         </div>
-                                        <div>
-                                            <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400">
-                                                {account.name}
-                                            </p>
-                                            <p className="text-xl font-bold text-slate-800 dark:text-slate-100">
-                                                {formatMoney(
-                                                    account.available_amount,
-                                                )}
-                                            </p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                            {budgets.length >= 2 ? (
-                                <form
-                                    onSubmit={handleTransferSubmit}
-                                    className="grid gap-4 sm:grid-cols-[1fr_1fr] items-end"
-                                >
-                                    <div className="grid gap-4 sm:col-span-2 lg:grid-cols-[1fr_1fr_1fr]">
-                                        <div>
-                                            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
-                                                Desde
-                                            </label>
-                                            <select
-                                                value={
+                                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-[1fr_2fr]">
+                                            <div>
+                                                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+                                                    Fecha
+                                                </label>
+                                                <input
+                                                    type="datetime-local"
+                                                    value={
+                                                        transferForm.data.date
+                                                    }
+                                                    onChange={(e) =>
+                                                        transferForm.setData(
+                                                            "date",
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-800 dark:text-slate-100"
+                                                    required
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+                                                    Nota
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={
+                                                        transferForm.data
+                                                            .comment
+                                                    }
+                                                    onChange={(e) =>
+                                                        transferForm.setData(
+                                                            "comment",
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-800 dark:text-slate-100"
+                                                    placeholder="Opcional"
+                                                />
+                                            </div>
+                                            <button
+                                                type="submit"
+                                                disabled={
+                                                    transferForm.processing ||
                                                     transferForm.data
-                                                        .from_budget_id
+                                                        .from_budget_id ===
+                                                        transferForm.data
+                                                            .to_budget_id
                                                 }
-                                                onChange={(e) =>
-                                                    transferForm.setData(
-                                                        "from_budget_id",
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-800 dark:text-slate-100"
+                                                className="w-full rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-4 py-3"
                                             >
-                                                {budgets.map((budget) => (
-                                                    <option
-                                                        key={budget.id}
-                                                        value={budget.id}
-                                                    >
-                                                        {budget.name} -{" "}
-                                                        {formatMoney(
-                                                            budget.available_amount,
-                                                        )}
-                                                    </option>
-                                                ))}
-                                            </select>
+                                                Transferir
+                                            </button>
                                         </div>
-                                        <div>
-                                            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
-                                                Hacia
-                                            </label>
-                                            <select
-                                                value={
-                                                    transferForm.data
-                                                        .to_budget_id
-                                                }
-                                                onChange={(e) =>
-                                                    transferForm.setData(
-                                                        "to_budget_id",
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-800 dark:text-slate-100"
-                                            >
-                                                {budgets.map((budget) => (
-                                                    <option
-                                                        key={budget.id}
-                                                        value={budget.id}
-                                                    >
-                                                        {budget.name} -{" "}
-                                                        {formatMoney(
-                                                            budget.available_amount,
-                                                        )}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
-                                                Monto
-                                            </label>
-                                            <input
-                                                type="number"
-                                                step="0.01"
-                                                min="0.01"
-                                                value={transferForm.data.amount}
-                                                onChange={(e) =>
-                                                    transferForm.setData(
-                                                        "amount",
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-800 dark:text-slate-100"
-                                                placeholder="0.00"
-                                                required
-                                            />
-                                        </div>
+                                    </form>
+                                ) : (
+                                    <div className="rounded-3xl bg-slate-50 dark:bg-slate-900/40 p-4 border border-slate-100 dark:border-slate-700 text-sm text-slate-500">
+                                        Necesitas al menos dos cuentas
+                                        principales para transferir dinero.
                                     </div>
-                                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-[1fr_2fr]">
-                                        <div>
-                                            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
-                                                Fecha
-                                            </label>
-                                            <input
-                                                type="datetime-local"
-                                                value={transferForm.data.date}
-                                                onChange={(e) =>
-                                                    transferForm.setData(
-                                                        "date",
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-800 dark:text-slate-100"
-                                                required
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
-                                                Nota
-                                            </label>
-                                            <input
-                                                type="text"
-                                                value={
-                                                    transferForm.data.comment
-                                                }
-                                                onChange={(e) =>
-                                                    transferForm.setData(
-                                                        "comment",
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-800 dark:text-slate-100"
-                                                placeholder="Opcional"
-                                            />
-                                        </div>
-                                        <button
-                                            type="submit"
-                                            disabled={
-                                                transferForm.processing ||
-                                                transferForm.data
-                                                    .from_budget_id ===
-                                                    transferForm.data
-                                                        .to_budget_id
-                                            }
-                                            className="w-full rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-4 py-3"
-                                        >
-                                            Transferir
-                                        </button>
-                                    </div>
-                                </form>
-                            ) : (
-                                <div className="rounded-3xl bg-slate-50 dark:bg-slate-900/40 p-4 border border-slate-100 dark:border-slate-700 text-sm text-slate-500">
-                                    Necesitas al menos dos cuentas principales
-                                    para transferir dinero.
-                                </div>
-                            )}
-                        </>
-                    )}
-                </SectionPanel>
-                </div>
+                                )}
+                            </>
+                        )}
+                    </DashboardModal>
+                )}
+            </div>
             {/* MODALS */}
 
             {/* Modal Historial General */}
-            {isHistorialOpen && selectedBudget && (
+            {isHistorialOpen1 && selectedBudget && !isMainAccountsExpanded && (
                 <DashboardModal
-                    open={isHistorialOpen}
-                    onClose={() => setIsHistorialOpen(false)}
+                    open={isHistorialOpen1}
+                    onClose={() => setIsHistorialOpen1(false)}
                     title={`Historial: ${selectedBudget.name}`}
                     subtitle={`${allExpenses.length} registro${allExpenses.length !== 1 ? "s" : ""} en total`}
                 >
@@ -1666,25 +1509,34 @@ export default function Dashboard({
                                 >
                                     <div className="min-w-0 flex-1 pr-3">
                                         <div className="flex items-center gap-1.5">
-                                            {selectedBudget.type !== "ahorro" && (
+                                            {selectedBudget.type !==
+                                                "ahorro" && (
                                                 <span className="text-[10px] font-bold text-slate-400 bg-slate-200/50 dark:bg-slate-800 px-1.5 py-0.5 rounded-md truncate max-w-[80px]">
                                                     {expense.sub_account_name}
                                                 </span>
                                             )}
                                             <span className="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate">
-                                                {expense.comment || (selectedBudget.type === "ahorro" ? "Ahorro" : "Gasto")}
+                                                {expense.comment ||
+                                                    (selectedBudget.type ===
+                                                    "ahorro"
+                                                        ? "Ahorro"
+                                                        : "Gasto")}
                                             </span>
                                         </div>
                                         <span className="text-[9px] text-slate-400 block mt-0.5">
                                             {formatDate(expense.date)}
                                         </span>
                                     </div>
-                                    <span className={`text-xs font-extrabold ${
-                                        selectedBudget.type === "ahorro"
-                                            ? "text-emerald-600 dark:text-emerald-400"
-                                            : "text-rose-600 dark:text-rose-400"
-                                    }`}>
-                                        {selectedBudget.type === "ahorro" ? "+" : "-"}
+                                    <span
+                                        className={`text-xs font-extrabold ${
+                                            selectedBudget.type === "ahorro"
+                                                ? "text-emerald-600 dark:text-emerald-400"
+                                                : "text-rose-600 dark:text-rose-400"
+                                        }`}
+                                    >
+                                        {selectedBudget.type === "ahorro"
+                                            ? "+"
+                                            : "-"}
                                         {formatMoney(expense.amount)}
                                     </span>
                                 </div>

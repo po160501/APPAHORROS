@@ -1,3 +1,4 @@
+import * as Icons from "lucide-react";
 export default function BudgetCard({
     budget,
     index,
@@ -8,6 +9,7 @@ export default function BudgetCard({
     handle3DMove,
     handle3DLeave,
     onSelect,
+    onEdit,
     onDelete,
     formatMoney,
     formatMonthSpanish,
@@ -67,28 +69,28 @@ export default function BudgetCard({
                     }}
                 />
             )}
-            <button
-                onClick={(e) => {
-                    e.stopPropagation();
-                    onDelete();
-                }}
-                title="Eliminar cuenta"
-                className="absolute top-2 right-4 z-20 text-slate-400 hover:text-rose-500 p-1 rounded-full bg-white/60 dark:bg-slate-800/60"
-            >
-                <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+            <div className="absolute top-2 right-4 z-20 flex items-center gap-2">
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onEdit?.(budget);
+                    }}
+                    title="Editar cuenta"
+                    className="text-slate-400 hover:text-emerald-500 p-1 rounded-full bg-white/60 dark:bg-slate-800/60"
                 >
-                    <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M6 18L18 6M6 6l12 12"
-                    />
-                </svg>
-            </button>
+                    <Icons.Pencil className="w-4 h-4" />
+                </button>
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete?.(budget);
+                    }}
+                    title="Eliminar cuenta"
+                    className="text-slate-400 hover:text-rose-500 p-1 rounded-full bg-white/60 dark:bg-slate-800/60"
+                >
+                    <Icons.X className="w-4 h-4" />
+                </button>
+            </div>
             <span
                 className={`absolute top-10 right-4 z-10 px-2.5 py-1 rounded-full text-[10px] font-extrabold tracking-wider ${
                     budget.type === "ahorro"

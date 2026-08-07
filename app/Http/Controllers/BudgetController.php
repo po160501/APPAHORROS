@@ -123,8 +123,19 @@ class BudgetController extends Controller
             abort_unless($from->user_id === $request->user()->id && $to->user_id === $request->user()->id, 403);
 
             AccountTransfer::create($request->only('from_budget_id', 'to_budget_id', 'amount', 'comment', 'date'));
-            $from->available_amount -= $request->amount;
-            $to->available_amount += $request->amount;
+
+            $amount = (float) $request->amount;
+
+            $from->available_amount -= $amount;
+            if ($from->type === 'gasto') {
+                $from->initial_amount -= $amount;
+            }
+
+            $to->available_amount += $amount;
+            if ($to->type === 'gasto') {
+                $to->initial_amount += $amount;
+            }
+
             $from->save();
             $to->save();
         });
