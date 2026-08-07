@@ -366,7 +366,15 @@ export default function Dashboard({
               ]
             : [];
 
-    const CARD_W = 320;
+    const [cardW, setCardW] = useState(
+        typeof window !== "undefined" && window.innerWidth < 640 ? 310 : 320,
+    );
+    useEffect(() => {
+        const onResize = () => setCardW(window.innerWidth < 640 ? 310 : 320);
+        window.addEventListener("resize", onResize);
+        return () => window.removeEventListener("resize", onResize);
+    }, []);
+    const CARD_W = cardW;
     const GAP = 16;
     const STACK_OFFSET = 10;
 
@@ -375,16 +383,31 @@ export default function Dashboard({
     const subTrackRef = useRef(null);
     const [subActive, setSubActive] = useState(0);
 
+    const scrollToCard = (trackRef, index) => {
+        const el = trackRef.current;
+        if (!el) return;
+        el.scrollTo({
+            left: index * (CARD_W + GAP),
+            behavior: "smooth",
+        });
+    };
+
     useEffect(() => {
         const el = budgetTrackRef.current;
         if (!el) return;
-        const onScroll = () =>
-            setBudgetActive(
-                Math.min(
-                    Math.round(el.scrollLeft / (CARD_W + GAP)),
-                    budgetItems.length - 1,
-                ),
+        const onScroll = () => {
+            const idx = Math.min(
+                Math.round(el.scrollLeft / (CARD_W + GAP)),
+                budgetItems.length - 1,
             );
+            setBudgetActive(idx);
+            const budget = budgetItems[idx];
+            if (budget && budget !== "__create__") {
+                setSelectedBudgetId(budget.id);
+            } else {
+                setSelectedBudgetId(null);
+            }
+        };
         el.addEventListener("scroll", onScroll, { passive: true });
         return () => el.removeEventListener("scroll", onScroll);
     }, [budgetItems.length]);
@@ -392,13 +415,19 @@ export default function Dashboard({
     useEffect(() => {
         const el = subTrackRef.current;
         if (!el) return;
-        const onScroll = () =>
-            setSubActive(
-                Math.min(
-                    Math.round(el.scrollLeft / (CARD_W + GAP)),
-                    subItems.length - 1,
-                ),
+        const onScroll = () => {
+            const idx = Math.min(
+                Math.round(el.scrollLeft / (CARD_W + GAP)),
+                subItems.length - 1,
             );
+            setSubActive(idx);
+            const sub = subItems[idx];
+            if (sub && sub !== "__create_sub__") {
+                setSelectedSubAccountId(sub.id);
+            } else {
+                setSelectedSubAccountId(null);
+            }
+        };
         el.addEventListener("scroll", onScroll, { passive: true });
         return () => el.removeEventListener("scroll", onScroll);
     }, [subItems.length]);
@@ -611,7 +640,6 @@ export default function Dashboard({
             }
         >
             <Head title="Control de Ahorros" />
-
             <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto space-y-8">
                 <SectionPanel
                     header={
@@ -1060,8 +1088,8 @@ export default function Dashboard({
                         scrollSnapType: "x mandatory",
                         scrollbarWidth: "none",
                         msOverflowStyle: "none",
-                        paddingLeft: "calc(50% - 160px)",
-                        paddingRight: "calc(50% - 160px)",
+                        paddingLeft: `calc(50% - ${CARD_W / 2}px)`,
+                        paddingRight: `calc(50% - ${CARD_W / 2}px)`,
                     }}
                 >
                     {budgetItems.map((budget, index) => {
@@ -1129,11 +1157,12 @@ export default function Dashboard({
                                 stackStyle={stackStyle}
                                 handle3DMove={handle3DMove}
                                 handle3DLeave={handle3DLeave}
-                                onSelect={() =>
+                                onSelect={() => {
                                     setSelectedBudgetId(
                                         isSelected ? null : budget.id,
-                                    )
-                                }
+                                    );
+                                    scrollToCard(budgetTrackRef, index);
+                                }}
                                 onDelete={() => handleDeleteBudget(budget.id)}
                                 formatMoney={formatMoney}
                                 formatMonthSpanish={formatMonthSpanish}
@@ -1311,8 +1340,8 @@ export default function Dashboard({
                                         scrollSnapType: "x mandatory",
                                         scrollbarWidth: "none",
                                         msOverflowStyle: "none",
-                                        paddingLeft: "calc(50% - 160px)",
-                                        paddingRight: "calc(50% - 160px)",
+                                        paddingLeft: `calc(50% - ${CARD_W / 2}px)`,
+                                        paddingRight: `calc(50% - ${CARD_W / 2}px)`,
                                     }}
                                 >
                                     {subItems.map((sub, index) => {
@@ -1392,13 +1421,17 @@ export default function Dashboard({
                                                 stackStyle={stackStyle}
                                                 handle3DMove={handle3DMove}
                                                 handle3DLeave={handle3DLeave}
-                                                onSelect={() =>
+                                                onSelect={() => {
                                                     setSelectedSubAccountId(
                                                         isSelected
                                                             ? null
                                                             : sub.id,
-                                                    )
-                                                }
+                                                    );
+                                                    scrollToCard(
+                                                        subTrackRef,
+                                                        index,
+                                                    );
+                                                }}
                                                 getSubAccountIcon={
                                                     getSubAccountIcon
                                                 }
