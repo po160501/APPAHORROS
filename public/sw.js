@@ -1,15 +1,10 @@
 const CACHE_NAME = 'money-saver-v1';
-const urlsToCache = [
-  '/',
-  '/build/assets/app.css',
-  '/build/assets/app.js'
-];
 
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(urlsToCache))
+    caches.open(CACHE_NAME).then(cache => cache.add('/'))
   );
+  self.skipWaiting();
 });
 
 self.addEventListener('fetch', event => {
