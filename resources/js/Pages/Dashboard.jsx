@@ -446,6 +446,7 @@ export default function Dashboard({
                 transform: "scale(1.06)",
                 zIndex: 10,
                 opacity: 1,
+                scrollSnapStop: "always",
             };
         if (diff < 0)
             return {
@@ -453,12 +454,14 @@ export default function Dashboard({
                 transform: `translateX(${diff * STACK_OFFSET}px) scale(0.92)`,
                 opacity: Math.max(0.4, 1 + diff * 0.25),
                 zIndex: index,
+                scrollSnapStop: "always",
             };
         return {
             ...base,
             transform: "scale(0.92)",
             opacity: 0.6,
             zIndex: index,
+            scrollSnapStop: "always",
         };
     };
 
