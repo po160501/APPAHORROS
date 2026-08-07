@@ -500,7 +500,7 @@ export default function Dashboard({
         ) {
             return (
                 <div className="p-3 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-2xl">
-                    <Icons.Send className="w-6 h-6" />
+                    <Icons.Car className="w-6 h-6" />
                 </div>
             );
         }
@@ -517,19 +517,7 @@ export default function Dashboard({
         ) {
             return (
                 <div className="p-3 bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-400 rounded-2xl">
-                    <svg
-                        className="w-6 h-6"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                        />
-                    </svg>
+                    <Icons.Gift className="w-6 h-6" />
                 </div>
             );
         }
@@ -545,19 +533,7 @@ export default function Dashboard({
         ) {
             return (
                 <div className="p-3 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-2xl">
-                    <svg
-                        className="w-6 h-6"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m12.728 12.728l.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"
-                        />
-                    </svg>
+                    <Icons.Drumstick className="w-6 h-6" />
                 </div>
             );
         }
@@ -573,19 +549,7 @@ export default function Dashboard({
         ) {
             return (
                 <div className="p-3 bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 rounded-2xl">
-                    <svg
-                        className="w-6 h-6"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M13 10V3L4 14h7v7l9-11h-7z"
-                        />
-                    </svg>
+                    <Icons.send className="w-6 h-6" />
                 </div>
             );
         }
@@ -1142,19 +1106,7 @@ export default function Dashboard({
                                 ) : (
                                     <div className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/50 rounded-3xl shadow-sm p-6 flex flex-col justify-center items-center text-center min-h-[300px]">
                                         <div className="w-12 h-12 bg-slate-50 dark:bg-slate-700/50 text-slate-400 rounded-full flex items-center justify-center mb-4 shadow-inner">
-                                            <svg
-                                                className="w-6 h-6"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                viewBox="0 0 24 24"
-                                            >
-                                                <path
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                    strokeWidth="2"
-                                                    d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"
-                                                />
-                                            </svg>
+                                            <Icons.MousePointerClick className="w-6 h-6" />
                                         </div>
                                         <h4 className="text-base font-bold text-slate-700 dark:text-slate-200 mb-1">
                                             Presiona una Subcuenta
