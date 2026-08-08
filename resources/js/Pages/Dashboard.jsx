@@ -23,6 +23,7 @@ export default function Dashboard({
     const [isSubAccountModalOpen, setIsSubAccountModalOpen] = useState(false);
     const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
     const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
+    const [isSavingModalOpen, setIsSavingModalOpen] = useState(false);
     const [editingRecord, setEditingRecord] = useState(null);
     const [isBudgetEditOpen, setIsBudgetEditOpen] = useState(false);
     const [isHistorialOpen, setIsHistorialOpen] = useState(false);
@@ -262,7 +263,10 @@ export default function Dashboard({
     const handleSavingSubmit = (e) => {
         e.preventDefault();
         savingForm.post(route("savings.store"), {
-            onSuccess: () => savingForm.reset("amount", "comment"),
+            onSuccess: () => {
+                savingForm.reset("amount", "comment");
+                setIsSavingModalOpen(false);
+            },
         });
     };
 
@@ -491,8 +495,6 @@ export default function Dashboard({
         if (
             n.includes("pasaje") ||
             n.includes("transporte") ||
-            n.includes("viaje") ||
-            n.includes("bus") ||
             n.includes("taxi") ||
             n.includes("gasolina") ||
             n.includes("carro") ||
@@ -504,9 +506,15 @@ export default function Dashboard({
                 </div>
             );
         }
+        if (n.includes("viaje")) {
+            return (
+                <div className="p-3 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-2xl">
+                    <Icons.PlaneIcon className="w-6 h-6" />
+                </div>
+            );
+        }
         if (
             n.includes("cita") ||
-            n.includes("novi") ||
             n.includes("pareja") ||
             n.includes("amor") ||
             n.includes("salida") ||
@@ -523,16 +531,12 @@ export default function Dashboard({
         }
         if (
             n.includes("comida") ||
-            n.includes("restaurante") ||
-            n.includes("almuerzo") ||
-            n.includes("cena") ||
-            n.includes("super") ||
             n.includes("mercado") ||
             n.includes("compras") ||
             n.includes("despensa")
         ) {
             return (
-                <div className="p-3 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-2xl">
+                <div className="p-3 bg-emerald-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 rounded-2xl">
                     <Icons.Drumstick className="w-6 h-6" />
                 </div>
             );
@@ -544,20 +548,14 @@ export default function Dashboard({
             n.includes("internet") ||
             n.includes("renta") ||
             n.includes("alquiler") ||
-            n.includes("pago") ||
-            n.includes("factura")
+            n.includes("pago")
         ) {
             return (
-                <div className="p-3 bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 rounded-2xl">
-                    <Icons.send className="w-6 h-6" />
+                <div className="p-3 bg-gray-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-2xl">
+                    <Icons.CreditCard className="w-6 h-6" />
                 </div>
             );
         }
-        return (
-            <div className="p-3 bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 rounded-2xl">
-                <Icons.CreditCard className="w-6 h-6" />
-            </div>
-        );
     };
 
     return (
@@ -591,7 +589,7 @@ export default function Dashboard({
             }
         >
             <Head title="Control de Ahorros" />
-            <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto space-y-8">
+            <div className="pt-8 pb-4 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto space-y-8">
                 {selectedBudget && (
                     <div className="space-y-8">
                         <SectionPanel
@@ -705,9 +703,21 @@ export default function Dashboard({
                         <div className="space-y-4">
                             {selectedBudget.type === "ahorro" ? (
                                 <div className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/50 rounded-3xl shadow-sm p-6 space-y-4">
-                                    <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">
-                                        Registrar Ahorro
-                                    </h3>
+                                    <div className="flex items-start justify-between gap-3">
+                                        <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">
+                                            Registrar Ahorro
+                                        </h3>
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                setIsSavingModalOpen(true)
+                                            }
+                                            className="w-10 h-10 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/20 flex items-center justify-center transition-all"
+                                            aria-label="Registrar ahorro"
+                                        >
+                                            <Icons.Plus className="w-5 h-5" />
+                                        </button>
+                                    </div>
                                     {selectedBudget.target_month &&
                                         (() => {
                                             const remaining = Math.max(
@@ -764,68 +774,48 @@ export default function Dashboard({
                                                 </div>
                                             );
                                         })()}
-                                    <form
-                                        onSubmit={handleSavingSubmit}
-                                        className="space-y-4"
-                                    >
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
-                                                Cantidad a Ahorrar
-                                            </label>
-                                            <div className="relative">
-                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">
-                                                    $
-                                                </span>
-                                                <input
-                                                    type="number"
-                                                    step="0.01"
-                                                    placeholder="Ej. 500"
-                                                    value={
-                                                        savingForm.data.amount
-                                                    }
-                                                    onChange={(e) =>
-                                                        savingForm.setData(
-                                                            "amount",
-                                                            e.target.value,
-                                                        )
-                                                    }
-                                                    className="w-full pl-7 pr-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                                    required
-                                                />
+
+                                    <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm p-6 space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                                                Historial de Ahorros
+                                            </h4>
+                                            <button
+                                                onClick={() => {
+                                                    setIsMainAccountsExpanded(
+                                                        false,
+                                                    );
+                                                    setIsHistorialOpen1(true);
+                                                }}
+                                                className="text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5 transition-colors"
+                                            >
+                                                Ver todo
+                                            </button>
+                                        </div>
+                                        {allExpenses.length === 0 ? (
+                                            <p className="text-sm text-slate-400 dark:text-slate-500 italic py-4 text-center">
+                                                No hay ahorros registrados aún.
+                                            </p>
+                                        ) : (
+                                            <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
+                                                {allExpenses.map((expense) => (
+                                                    <ExpenseRow
+                                                        key={expense.id}
+                                                        expense={expense}
+                                                        type="ahorro"
+                                                        onEdit={openEditRecord}
+                                                        onDelete={
+                                                            handleDeleteExpense
+                                                        }
+                                                        formatMoney={
+                                                            formatMoney
+                                                        }
+                                                        formatDate={formatDate}
+                                                    />
+                                                ))}
                                             </div>
-                                            {savingForm.errors.amount && (
-                                                <p className="text-red-500 text-xs mt-1">
-                                                    {savingForm.errors.amount}
-                                                </p>
-                                            )}
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
-                                                Comentario (opcional)
-                                            </label>
-                                            <input
-                                                type="text"
-                                                value={savingForm.data.comment}
-                                                onChange={(e) =>
-                                                    savingForm.setData(
-                                                        "comment",
-                                                        e.target.value.toUpperCase(),
-                                                    )
-                                                }
-                                                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                                maxLength={255}
-                                            />
-                                        </div>
-                                        <button
-                                            type="submit"
-                                            disabled={savingForm.processing}
-                                            className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl text-sm transition-colors disabled:opacity-50"
-                                        >
-                                            {savingForm.processing
-                                                ? "Guardando..."
-                                                : "Guardar Ahorro"}
-                                        </button>
-                                    </form>
+                                        )}
+                                    </div>
                                 </div>
                             ) : selectedBudget.sub_accounts.length === 0 ? (
                                 <div className="bg-slate-50 dark:bg-slate-800/40 rounded-3xl border border-dashed border-slate-200 dark:border-slate-700 p-8 text-center">
@@ -943,48 +933,9 @@ export default function Dashboard({
                         </div>
 
                         {/* DETALLE SUBCUENTA + HISTORIAL */}
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-4">
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 ">
                             <div className="lg:col-span-2 space-y-6">
-                                {selectedBudget.type === "ahorro" ? (
-                                    <div className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/50 rounded-3xl shadow-sm p-6 space-y-4">
-                                        <div className="flex items-center justify-between">
-                                            <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                                                Historial de Ahorros
-                                            </h4>
-                                            <button
-                                                onClick={() =>
-                                                    setIsHistorialOpen(true)
-                                                }
-                                                className="text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5 transition-colors"
-                                            >
-                                                Ver todo
-                                            </button>
-                                        </div>
-                                        {allExpenses.length === 0 ? (
-                                            <p className="text-sm text-slate-400 dark:text-slate-500 italic py-4 text-center">
-                                                No hay ahorros registrados aún.
-                                            </p>
-                                        ) : (
-                                            <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
-                                                {allExpenses.map((expense) => (
-                                                    <ExpenseRow
-                                                        key={expense.id}
-                                                        expense={expense}
-                                                        type="ahorro"
-                                                        onEdit={openEditRecord}
-                                                        onDelete={
-                                                            handleDeleteExpense
-                                                        }
-                                                        formatMoney={
-                                                            formatMoney
-                                                        }
-                                                        formatDate={formatDate}
-                                                    />
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                ) : activeSubAccount ? (
+                                {selectedBudget.type === "ahorro" ? null : activeSubAccount ? (
                                     <div className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/50 rounded-3xl shadow-sm p-6 space-y-6">
                                         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-4">
                                             <div className="flex items-center gap-3">
@@ -1009,7 +960,7 @@ export default function Dashboard({
                                                     onClick={openSubAccountEdit}
                                                     className="border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/40 text-slate-600 dark:text-slate-300 font-semibold px-3 py-2 rounded-xl text-xs transition-all"
                                                 >
-                                                    Editar
+                                                    <Icons.Pen className="w-6 h-6" />
                                                 </button>
                                                 <button
                                                     onClick={() =>
@@ -1060,9 +1011,14 @@ export default function Dashboard({
                                                     Historial de Gastos
                                                 </h4>
                                                 <button
-                                                    onClick={() =>
-                                                        setIsHistorialOpen(true)
-                                                    }
+                                                    onClick={() => {
+                                                        setIsMainAccountsExpanded(
+                                                            false,
+                                                        );
+                                                        setIsHistorialOpen1(
+                                                            true,
+                                                        );
+                                                    }}
                                                     className="text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5 transition-colors"
                                                 >
                                                     Ver todo
@@ -1123,7 +1079,7 @@ export default function Dashboard({
                 )}
             </div>
 
-            <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto space-y-8">
+            <div className="pb-9 pt-1 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto space-y-8">
                 <SectionPanel
                     header={
                         <div>
@@ -1152,7 +1108,7 @@ export default function Dashboard({
                                     incomeForm.setData("income", e.target.value)
                                 }
                                 className="mt-1 block w-36 px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100"
-                                placeholder="$ 0.00"
+                                placeholder="S/ 0.00"
                             />
                         </label>
                         <button
@@ -1498,6 +1454,82 @@ export default function Dashboard({
                 </DashboardModal>
             )}
 
+            {isSavingModalOpen && (
+                <DashboardModal
+                    open={isSavingModalOpen}
+                    onClose={() => setIsSavingModalOpen(false)}
+                    title="Registrar Ahorro"
+                    subtitle="Agrega un nuevo ahorro a esta cuenta."
+                >
+                    <form onSubmit={handleSavingSubmit} className="space-y-4">
+                        <div>
+                            <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
+                                Cantidad a Ahorrar
+                            </label>
+                            <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">
+                                    $
+                                </span>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    placeholder="Ej. 500"
+                                    value={savingForm.data.amount}
+                                    onChange={(e) =>
+                                        savingForm.setData(
+                                            "amount",
+                                            e.target.value,
+                                        )
+                                    }
+                                    className="w-full pl-7 pr-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                    required
+                                />
+                            </div>
+                            {savingForm.errors.amount && (
+                                <p className="text-red-500 text-xs mt-1">
+                                    {savingForm.errors.amount}
+                                </p>
+                            )}
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
+                                Comentario (opcional)
+                            </label>
+                            <input
+                                type="text"
+                                value={savingForm.data.comment}
+                                onChange={(e) =>
+                                    savingForm.setData(
+                                        "comment",
+                                        e.target.value.toUpperCase(),
+                                    )
+                                }
+                                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                maxLength={255}
+                            />
+                        </div>
+                        <div className="flex gap-3 pt-2">
+                            <button
+                                type="button"
+                                onClick={() => setIsSavingModalOpen(false)}
+                                className="w-1/2 py-2.5 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-xl text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={savingForm.processing}
+                                className="w-1/2 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl text-sm transition-colors disabled:opacity-50"
+                            >
+                                {savingForm.processing
+                                    ? "Guardando..."
+                                    : "Guardar Ahorro"}
+                            </button>
+                        </div>
+                    </form>
+                </DashboardModal>
+            )}
+
             {/* Modal Crear Cuenta */}
             {isBudgetModalOpen && (
                 <DashboardModal
@@ -1736,7 +1768,7 @@ export default function Dashboard({
                             </label>
                             <div className="relative">
                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">
-                                    $
+                                    S/
                                 </span>
                                 <input
                                     type="number"
